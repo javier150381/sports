@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
+import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { getTeamBySlug } from '@/server/teams/queries'
 
 type TeamPageProps = {
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 type EmbedInfo = {
   url: string
-  kind: 'youtube' | 'tiktok' | 'drive'
+  kind: 'youtube' | 'tiktok' | 'tiktok-script' | 'drive'
 }
 
 function getEmbedInfo(url: string | null): EmbedInfo | null {
@@ -33,12 +34,18 @@ function getEmbedInfo(url: string | null): EmbedInfo | null {
       return videoId ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' } : null
     }
 
-    if (host === 'tiktok.com' || host === 'vm.tiktok.com' || host === 'vt.tiktok.com') {
+    if (host === 'tiktok.com' || host === 'm.tiktok.com') {
       const parts = parsed.pathname.split('/').filter(Boolean)
       const videoIndex = parts.findIndex((part) => part === 'video')
       const videoId = videoIndex >= 0 ? parts[videoIndex + 1] : null
 
-      return videoId ? { url: `https://www.tiktok.com/embed/v2/${videoId}`, kind: 'tiktok' } : null
+      return videoId
+        ? { url: `https://www.tiktok.com/embed/v2/${videoId}`, kind: 'tiktok' }
+        : { url, kind: 'tiktok-script' }
+    }
+
+    if (host === 'vm.tiktok.com' || host === 'vt.tiktok.com') {
+      return { url, kind: 'tiktok-script' }
     }
 
     if (host === 'drive.google.com') {
@@ -146,7 +153,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
             return (
               <article key={post.id} className="overflow-hidden rounded border border-border bg-panel">
-                {embed ? (
+                {embed?.kind === 'tiktok-script' ? (
+                  <TikTokEmbed url={embed.url} title={post.title} />
+                ) : embed ? (
                   <div className={embed.kind === 'tiktok' ? 'aspect-[9/16] bg-black' : 'aspect-video bg-black'}>
                     <iframe
                       src={embed.url}
