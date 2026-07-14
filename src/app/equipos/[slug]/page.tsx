@@ -15,6 +15,18 @@ type EmbedInfo = {
   kind: 'youtube' | 'tiktok' | 'tiktok-script' | 'drive'
 }
 
+function getEmbedFrameClass(kind: EmbedInfo['kind']) {
+  if (kind === 'tiktok') {
+    return 'aspect-[9/16] max-h-[680px]'
+  }
+
+  if (kind === 'drive') {
+    return 'aspect-[9/16] max-h-[680px]'
+  }
+
+  return 'aspect-video'
+}
+
 function getEmbedInfo(url: string | null): EmbedInfo | null {
   if (!url) {
     return null
@@ -156,11 +168,13 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 {embed?.kind === 'tiktok-script' ? (
                   <TikTokEmbed url={embed.url} title={post.title} />
                 ) : embed ? (
-                  <div className={embed.kind === 'tiktok' ? 'aspect-[9/16] bg-black' : 'aspect-video bg-black'}>
+                  <div
+                    className={`${getEmbedFrameClass(embed.kind)} relative mx-auto w-full overflow-hidden bg-black`}
+                  >
                     <iframe
                       src={embed.url}
                       title={post.title}
-                      className="h-full w-full"
+                      className="absolute inset-0 h-full w-full border-0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
                     />
