@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
 import { TikTokEmbed } from '@/features/content/tiktok-embed'
+import { MemeCarousel } from '@/features/content/meme-carousel'
 import { getTeamBySlug } from '@/server/teams/queries'
 
 type TeamPageProps = {
@@ -86,6 +87,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const nextFixture = team.fixtures.find((fixture) => new Date(fixture.match_date) > new Date())
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
+  const memes = team.content.filter((post) => post.content_type === 'MEME')
+  const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
 
   return (
     <MobileContainer>
@@ -160,7 +163,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
       <section className="mt-6">
         <h2 className="text-2xl font-black">Contenido destacado</h2>
         <div className="mt-4 grid gap-4">
-          {team.content.map((post) => {
+          {featuredContent.map((post) => {
             const embed = getEmbedInfo(post.external_url)
 
             return (
@@ -215,13 +218,15 @@ export default async function TeamPage({ params }: TeamPageProps) {
               </article>
             )
           })}
-          {team.content.length === 0 ? (
+          {featuredContent.length === 0 ? (
             <p className="rounded border border-border bg-panel p-5 text-muted">
               Todavia no hay contenido publicado para este equipo.
             </p>
           ) : null}
         </div>
       </section>
+
+      <MemeCarousel memes={memes} teamName={team.name} />
     </MobileContainer>
   )
 }
