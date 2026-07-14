@@ -1,6 +1,7 @@
 import {
   createContentPostAction,
   deleteContentPostAction,
+  updateContentPostAction,
   updateContentStatusAction,
 } from '@/server/admin/content-actions'
 import { getAdminContentPageData } from '@/server/admin/content-queries'
@@ -184,6 +185,126 @@ export default async function AdminContentPage() {
                   </form>
                 </div>
               </div>
+              <details className="mt-5 rounded border border-border bg-background/55 p-4">
+                <summary className="cursor-pointer font-bold text-white">Editar contenido</summary>
+                <form action={updateContentPostAction} className="mt-5 grid gap-4">
+                  <input type="hidden" name="id" value={post.id} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Titulo
+                      <input
+                        name="title"
+                        defaultValue={post.title}
+                        className="rounded border border-border bg-background px-3 py-3"
+                        required
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Tipo
+                      <select
+                        name="content_type"
+                        className="rounded border border-border bg-background px-3 py-3"
+                        defaultValue={post.content_type}
+                      >
+                        {contentTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold md:col-span-2">
+                      Descripcion
+                      <textarea
+                        name="description"
+                        defaultValue={post.description ?? ''}
+                        className="min-h-24 rounded border border-border bg-background px-3 py-3"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Equipo relacionado
+                      <select
+                        name="team_id"
+                        className="rounded border border-border bg-background px-3 py-3"
+                        defaultValue={teams.find((team) => team.slug === post.team?.slug)?.id ?? ''}
+                      >
+                        <option value="">Sin equipo</option>
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Estado
+                      <select
+                        name="status"
+                        className="rounded border border-border bg-background px-3 py-3"
+                        defaultValue={post.status}
+                      >
+                        <option value="DRAFT">Borrador</option>
+                        <option value="SCHEDULED">Programado</option>
+                        <option value="PUBLISHED">Publicado</option>
+                        <option value="ARCHIVED">Archivado</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      URL externa
+                      <input
+                        name="external_url"
+                        type="url"
+                        defaultValue={post.external_url ?? ''}
+                        className="rounded border border-border bg-background px-3 py-3"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      URL de imagen o grafico
+                      <input
+                        name="image_url"
+                        type="url"
+                        defaultValue={post.image_url ?? ''}
+                        className="rounded border border-border bg-background px-3 py-3"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Texto alternativo / etiqueta
+                      <input
+                        name="alt_text"
+                        defaultValue={post.alt_text ?? ''}
+                        className="rounded border border-border bg-background px-3 py-3"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-semibold">
+                      Orden
+                      <input
+                        name="display_order"
+                        type="number"
+                        min="0"
+                        defaultValue={post.display_order}
+                        className="rounded border border-border bg-background px-3 py-3"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input name="is_featured" type="checkbox" defaultChecked={post.is_featured} />
+                      Destacado
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        name="nfc_exclusive"
+                        type="checkbox"
+                        defaultChecked={post.nfc_exclusive}
+                      />
+                      Exclusivo NFC
+                    </label>
+                  </div>
+                  <button className="rounded bg-accent px-5 py-3 font-black text-white" type="submit">
+                    Guardar cambios
+                  </button>
+                </form>
+              </details>
             </article>
           ))}
         </div>
