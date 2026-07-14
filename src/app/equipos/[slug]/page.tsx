@@ -9,7 +9,12 @@ type TeamPageProps = {
 
 export const dynamic = 'force-dynamic'
 
-function getYouTubeEmbedUrl(url: string | null) {
+type EmbedInfo = {
+  url: string
+  kind: 'youtube' | 'tiktok' | 'drive'
+}
+
+function getEmbedInfo(url: string | null): EmbedInfo | null {
   if (!url) {
     return null
   }
@@ -20,12 +25,30 @@ function getYouTubeEmbedUrl(url: string | null) {
 
     if (host === 'youtube.com' || host === 'm.youtube.com') {
       const videoId = parsed.searchParams.get('v')
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+      return videoId ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' } : null
     }
 
     if (host === 'youtu.be') {
       const videoId = parsed.pathname.split('/').filter(Boolean)[0]
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+      return videoId ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' } : null
+    }
+
+    if (host === 'tiktok.com' || host === 'vm.tiktok.com' || host === 'vt.tiktok.com') {
+      const parts = parsed.pathname.split('/').filter(Boolean)
+      const videoIndex = parts.findIndex((part) => part === 'video')
+      const videoId = videoIndex >= 0 ? parts[videoIndex + 1] : null
+
+      return videoId ? { url: `https://www.tiktok.com/embed/v2/${videoId}`, kind: 'tiktok' } : null
+    }
+
+    if (host === 'drive.google.com') {
+      const parts = parsed.pathname.split('/').filter(Boolean)
+      const fileIndex = parts.findIndex((part) => part === 'd')
+      const fileId = fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
+
+      return fileId
+        ? { url: `https://drive.google.com/file/d/${fileId}/preview`, kind: 'drive' }
+        : null
     }
   } catch {
     return null
@@ -119,14 +142,14 @@ export default async function TeamPage({ params }: TeamPageProps) {
         <h2 className="text-2xl font-black">Contenido destacado</h2>
         <div className="mt-4 grid gap-4">
           {team.content.map((post) => {
-            const youtubeEmbedUrl = getYouTubeEmbedUrl(post.external_url)
+            const embed = getEmbedInfo(post.external_url)
 
             return (
               <article key={post.id} className="overflow-hidden rounded border border-border bg-panel">
-                {youtubeEmbedUrl ? (
-                  <div className="aspect-video bg-black">
+                {embed ? (
+                  <div className={embed.kind === 'tiktok' ? 'aspect-[9/16] bg-black' : 'aspect-video bg-black'}>
                     <iframe
-                      src={youtubeEmbedUrl}
+                      src={embed.url}
                       title={post.title}
                       className="h-full w-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -150,7 +173,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
                   </p>
                   <h3 className="mt-3 font-black">{post.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted">{post.description}</p>
-                  {post.external_url && !youtubeEmbedUrl ? (
+                  {post.external_url && !embed ? (
                     <a
                       href={post.external_url}
                       target="_blank"
