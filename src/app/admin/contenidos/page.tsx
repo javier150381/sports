@@ -93,7 +93,7 @@ export default async function AdminContentPage() {
             URL externa
             <input
               name="external_url"
-              type="url"
+              type="text"
               placeholder="https://..."
               className="rounded border border-border bg-background px-3 py-3"
             />
@@ -102,7 +102,7 @@ export default async function AdminContentPage() {
             URL de imagen o grafico
             <input
               name="image_url"
-              type="url"
+              type="text"
               placeholder="https://..."
               className="rounded border border-border bg-background px-3 py-3"
             />
@@ -253,7 +253,7 @@ export default async function AdminContentPage() {
                       URL externa
                       <input
                         name="external_url"
-                        type="url"
+                        type="text"
                         defaultValue={post.external_url ?? ''}
                         className="rounded border border-border bg-background px-3 py-3"
                       />
@@ -262,7 +262,7 @@ export default async function AdminContentPage() {
                       URL de imagen o grafico
                       <input
                         name="image_url"
-                        type="url"
+                        type="text"
                         defaultValue={post.image_url ?? ''}
                         className="rounded border border-border bg-background px-3 py-3"
                       />
@@ -300,9 +300,19 @@ export default async function AdminContentPage() {
                       Exclusivo NFC
                     </label>
                   </div>
-                  <button className="rounded bg-accent px-5 py-3 font-black text-white" type="submit">
-                    Guardar cambios
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button className="rounded border border-border px-5 py-3 font-black text-white" type="submit">
+                      Guardar cambios
+                    </button>
+                    <button
+                      className="rounded bg-accent px-5 py-3 font-black text-white"
+                      name="intent"
+                      value="publish"
+                      type="submit"
+                    >
+                      Guardar y publicar
+                    </button>
+                  </div>
                 </form>
               </details>
             </article>

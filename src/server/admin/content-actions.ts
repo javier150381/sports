@@ -25,7 +25,7 @@ export async function createContentPostAction(formData: FormData) {
     image_url: formData.get('image_url'),
     alt_text: formData.get('alt_text'),
     team_id: formData.get('team_id'),
-    status: formData.get('status'),
+    status: formData.get('intent') === 'publish' ? 'PUBLISHED' : formData.get('status'),
     is_featured: formData.get('is_featured') === 'on',
     nfc_exclusive: formData.get('nfc_exclusive') === 'on',
     display_order: formData.get('display_order'),

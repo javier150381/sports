@@ -15,12 +15,17 @@ export const contentTypeSchema = z.enum([
 
 export const contentStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
 
+const optionalUrlSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim() : value),
+  z.string().url('Ingresa una URL valida.').or(z.literal('')).optional(),
+)
+
 export const contentPostInputSchema = z.object({
   title: z.string().min(3, 'El titulo es obligatorio.'),
   description: z.string().optional(),
   content_type: contentTypeSchema,
-  external_url: z.string().url('Ingresa una URL valida.').or(z.literal('')).optional(),
-  image_url: z.string().url('Ingresa una URL de imagen valida.').or(z.literal('')).optional(),
+  external_url: optionalUrlSchema,
+  image_url: optionalUrlSchema,
   alt_text: z.string().optional(),
   team_id: z.string().uuid().or(z.literal('')).optional(),
   status: contentStatusSchema,
