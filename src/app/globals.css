@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: dark;
+  --background: #06070a;
+  --foreground: #f7f7f8;
+  --muted: #a8adb7;
+  --panel: #101217;
+  --panel-strong: #171a21;
+  --border: #2b303b;
+  --accent: #e11d2e;
+  --accent-strong: #ff3347;
+  --silver: #c9ced8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-silver: var(--silver);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgb(225 29 46 / 16%), transparent 28rem),
+    linear-gradient(180deg, #08090d 0%, #06070a 48%, #0c0d12 100%);
+  color: var(--foreground);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
