@@ -21,7 +21,7 @@ function getEmbedFrameClass(kind: EmbedInfo['kind']) {
   }
 
   if (kind === 'drive') {
-    return 'aspect-[9/16] max-h-[680px]'
+    return 'aspect-video'
   }
 
   return 'aspect-video'
