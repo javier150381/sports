@@ -1,11 +1,13 @@
 import {
   createContentPostAction,
   deleteContentPostAction,
+  moveContentPostAction,
   updateContentPostAction,
   updateContentStatusAction,
 } from '@/server/admin/content-actions'
 import { getAdminContentPageData } from '@/server/admin/content-queries'
 import { ConfirmSubmitButton } from '@/features/admin/confirm-submit-button'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 
 const contentTypes = [
   'NEWS',
@@ -159,7 +161,29 @@ export default async function AdminContentPage() {
                     <p className="mt-2 break-all text-xs text-muted">Imagen: {post.image_url}</p>
                   ) : null}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <form action={moveContentPostAction}>
+                    <input type="hidden" name="id" value={post.id} />
+                    <input type="hidden" name="direction" value="up" />
+                    <button
+                      className="inline-flex items-center gap-2 rounded border border-border px-3 py-2 text-sm font-bold"
+                      type="submit"
+                    >
+                      <ArrowUp className="size-4" aria-hidden="true" />
+                      Subir
+                    </button>
+                  </form>
+                  <form action={moveContentPostAction}>
+                    <input type="hidden" name="id" value={post.id} />
+                    <input type="hidden" name="direction" value="down" />
+                    <button
+                      className="inline-flex items-center gap-2 rounded border border-border px-3 py-2 text-sm font-bold"
+                      type="submit"
+                    >
+                      <ArrowDown className="size-4" aria-hidden="true" />
+                      Bajar
+                    </button>
+                  </form>
                   <form action={updateContentStatusAction}>
                     <input type="hidden" name="id" value={post.id} />
                     <input type="hidden" name="status" value="PUBLISHED" />

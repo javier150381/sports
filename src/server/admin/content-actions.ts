@@ -93,6 +93,81 @@ export async function updateContentStatusAction(formData: FormData) {
   revalidatePath('/equipos')
 }
 
+export async function moveContentPostAction(formData: FormData) {
+  const profile = await requireRole(['ADMIN', 'EDITOR'])
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  const id = String(formData.get('id') ?? '')
+  const direction = String(formData.get('direction') ?? '')
+
+  if (!id || (direction !== 'up' && direction !== 'down')) {
+    throw new Error('Movimiento invalido.')
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const { data: currentPost, error: currentPostError } = await supabase
+    .from('content_posts')
+    .select('id, team_id')
+    .eq('id', id)
+    .single()
+
+  if (currentPostError || !currentPost) {
+    throw new Error(currentPostError?.message ?? 'Contenido no encontrado.')
+  }
+
+  let query = supabase
+    .from('content_posts')
+    .select('id, display_order, created_at')
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  query = currentPost.team_id
+    ? query.eq('team_id', currentPost.team_id)
+    : query.is('team_id', null)
+
+  const { data: posts, error: postsError } = await query
+
+  if (postsError) {
+    throw new Error(postsError.message)
+  }
+
+  const orderedPosts = posts ?? []
+  const currentIndex = orderedPosts.findIndex((post) => post.id === id)
+
+  if (currentIndex < 0) {
+    throw new Error('Contenido no encontrado en el listado.')
+  }
+
+  const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+
+  if (nextIndex < 0 || nextIndex >= orderedPosts.length) {
+    revalidatePath('/admin/contenidos')
+    revalidatePath('/equipos')
+    return
+  }
+
+  const reorderedPosts = [...orderedPosts]
+  const [selectedPost] = reorderedPosts.splice(currentIndex, 1)
+  reorderedPosts.splice(nextIndex, 0, selectedPost)
+
+  const updates = reorderedPosts.map((post, index) =>
+    supabase.from('content_posts').update({ display_order: index }).eq('id', post.id),
+  )
+
+  const results = await Promise.all(updates)
+  const error = results.find((result) => result.error)?.error
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/admin/contenidos')
+  revalidatePath('/equipos')
+}
+
 export async function updateContentPostAction(formData: FormData) {
   const profile = await requireRole(['ADMIN', 'EDITOR'])
 

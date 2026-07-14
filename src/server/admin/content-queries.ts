@@ -37,6 +37,7 @@ export async function getAdminContentPageData() {
       .select(
         'id, title, description, content_type, status, external_url, image_url, alt_text, is_featured, nfc_exclusive, display_order, team:team_id(name, slug)',
       )
+      .order('display_order', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(50),
   ])
