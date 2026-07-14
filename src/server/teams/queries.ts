@@ -99,7 +99,7 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
       .eq('status', 'PUBLISHED')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('display_order', { ascending: true })
-      .limit(6),
+      .limit(50),
   ])
 
   return {
