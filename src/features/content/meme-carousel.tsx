@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
-import { Share2 } from 'lucide-react'
+import { useRef } from 'react'
+import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 
 type MemeItem = {
   id: string
@@ -18,25 +18,44 @@ type MemeCarouselProps = {
 }
 
 export function MemeCarousel({ memes, teamName }: MemeCarouselProps) {
+  const carouselRef = useRef<HTMLDivElement>(null)
+
   if (memes.length === 0) {
     return null
+  }
+
+  function scrollMemes(direction: 'left' | 'right') {
+    const carousel = carouselRef.current
+
+    if (!carousel) {
+      return
+    }
+
+    carousel.scrollBy({
+      left: direction === 'right' ? carousel.clientWidth * 0.86 : carousel.clientWidth * -0.86,
+      behavior: 'smooth',
+    })
   }
 
   async function shareMeme(meme: MemeItem) {
     const shareUrl = meme.external_url || meme.image_url || window.location.href
     const text = meme.description || `Mira este meme de ${teamName} en KUNTUR SPORT.`
 
-    if (navigator.share) {
-      await navigator.share({
-        title: meme.title,
-        text,
-        url: shareUrl,
-      })
-      return
-    }
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: meme.title,
+          text,
+          url: shareUrl,
+        })
+        return
+      }
 
-    await navigator.clipboard.writeText(shareUrl)
-    window.alert('Enlace copiado para compartir.')
+      await navigator.clipboard.writeText(shareUrl)
+      window.alert('Enlace copiado para compartir.')
+    } catch {
+      window.alert('No se pudo compartir este meme. Intenta copiar el enlace manualmente.')
+    }
   }
 
   return (
@@ -48,23 +67,47 @@ export function MemeCarousel({ memes, teamName }: MemeCarouselProps) {
           </p>
           <h2 className="mt-1 text-2xl font-black">Memes recientes</h2>
         </div>
-        <p className="text-xs text-muted">{memes.length} memes</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted">{memes.length} memes</p>
+          {memes.length > 1 ? (
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => scrollMemes('left')}
+                className="grid size-9 place-items-center rounded border border-border bg-panel text-white transition hover:border-accent"
+                aria-label="Ver meme anterior"
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollMemes('right')}
+                className="grid size-9 place-items-center rounded border border-border bg-panel text-white transition hover:border-accent"
+                aria-label="Ver siguiente meme"
+              >
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3">
+      <div
+        ref={carouselRef}
+        className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3"
+      >
         {memes.map((meme) => (
           <article
             key={meme.id}
-            className="min-w-[82%] snap-center overflow-hidden rounded border border-border bg-panel"
+            className="min-w-[84%] snap-center overflow-hidden rounded border border-border bg-panel sm:min-w-[58%]"
           >
             <div className="relative aspect-[4/5] bg-background">
               {meme.image_url ? (
-                <Image
-                  src={meme.image_url}
-                  alt={meme.alt_text || meme.title}
-                  fill
-                  sizes="360px"
-                  className="object-cover"
+                <div
+                  role="img"
+                  aria-label={meme.alt_text || meme.title}
+                  className="h-full w-full bg-cover bg-center"
+                  style={{ backgroundImage: `url("${meme.image_url}")` }}
                 />
               ) : (
                 <div className="grid h-full place-items-center p-6 text-center">
