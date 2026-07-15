@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Play, Share2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Play, Share2 } from 'lucide-react'
 
 type VideoItem = {
   id: string
@@ -10,6 +10,7 @@ type VideoItem = {
   image_url: string | null
   external_url: string | null
   alt_text: string | null
+  content_type: string
 }
 
 type VideoCarouselProps = {
@@ -135,6 +136,7 @@ export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
         {videos.map((video) => {
           const embedUrl = getEmbedUrl(video.external_url)
           const isActive = activeVideoId === video.id
+          const isLiveStream = video.content_type === 'LIVE_STREAM'
 
           return (
             <article
@@ -142,7 +144,32 @@ export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
               className="min-w-[84%] snap-center overflow-hidden rounded border border-border bg-panel sm:min-w-[58%]"
             >
               <div className="relative aspect-video bg-black">
-                {isActive && embedUrl ? (
+                {isLiveStream && video.external_url ? (
+                  <a
+                    href={video.external_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="relative block h-full w-full overflow-hidden"
+                  >
+                    {video.image_url ? (
+                      <div
+                        role="img"
+                        aria-label={video.alt_text || video.title}
+                        className="h-full w-full bg-cover bg-center opacity-80"
+                        style={{ backgroundImage: `url("${video.image_url}")` }}
+                      />
+                    ) : (
+                      <div className="grid h-full place-items-center p-6 text-center">
+                        <p className="text-xl font-black">{video.title}</p>
+                      </div>
+                    )}
+                    <span className="absolute inset-0 grid place-items-center">
+                      <span className="grid size-14 place-items-center rounded-full bg-accent text-white">
+                        <ExternalLink className="size-6" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </a>
+                ) : isActive && embedUrl ? (
                   <iframe
                     src={embedUrl}
                     title={video.title}
@@ -178,7 +205,7 @@ export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
               </div>
               <div className="p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-                  Reciente
+                  {isLiveStream ? 'Transmision en vivo' : 'Reciente'}
                 </p>
                 <h3 className="mt-2 font-black">{video.title}</h3>
                 {video.description ? (
@@ -186,14 +213,27 @@ export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
                     {video.description}
                   </p>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => void shareVideo(video)}
-                  className="mt-4 inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-black text-white transition hover:bg-accent-strong"
-                >
-                  <Share2 className="size-4" aria-hidden="true" />
-                  Compartir
-                </button>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {isLiveStream && video.external_url ? (
+                    <a
+                      href={video.external_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-black text-white transition hover:bg-accent-strong"
+                    >
+                      <ExternalLink className="size-4" aria-hidden="true" />
+                      Ver transmision
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void shareVideo(video)}
+                    className="inline-flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-black text-white transition hover:border-accent"
+                  >
+                    <Share2 className="size-4" aria-hidden="true" />
+                    Compartir
+                  </button>
+                </div>
               </div>
             </article>
           )
