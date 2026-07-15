@@ -28,28 +28,37 @@ function firstRelation<T>(value: T | T[] | null): T | null {
   return value
 }
 
-export async function getAdminContentPageData() {
+export async function getAdminContentPageData(teamSlug?: string) {
   const supabase = await createSupabaseServerClient()
-  const [teams, contentResult] = await Promise.all([
-    getActiveTeams(),
-    supabase
-      .from('content_posts')
-      .select(
-        'id, title, description, content_type, status, external_url, image_url, alt_text, is_featured, nfc_exclusive, display_order, team:team_id(name, slug)',
-      )
-      .order('display_order', { ascending: true })
-      .order('created_at', { ascending: false })
-      .limit(50),
-  ])
+  const teams = await getActiveTeams()
+  const selectedTeam = teams.find((team) => team.slug === teamSlug)
+  let contentQuery = supabase
+    .from('content_posts')
+    .select(
+      'id, title, description, content_type, status, external_url, image_url, alt_text, is_featured, nfc_exclusive, display_order, team:team_id(name, slug)',
+    )
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(80)
+
+  if (teamSlug === 'sin-equipo') {
+    contentQuery = contentQuery.is('team_id', null)
+  } else if (selectedTeam) {
+    contentQuery = contentQuery.eq('team_id', selectedTeam.id)
+  }
+
+  const contentResult = await contentQuery
 
   if (contentResult.error) {
     throw new Error(contentResult.error.message)
   }
 
-  const posts = (contentResult.data as unknown as AdminContentRow[]).map((post) => ({
-    ...post,
-    team: firstRelation(post.team),
-  }))
+  const posts = (contentResult.data as unknown as AdminContentRow[]).map(
+    (post) => ({
+      ...post,
+      team: firstRelation(post.team),
+    }),
+  )
 
-  return { teams, posts }
+  return { teams, posts, selectedTeam }
 }
