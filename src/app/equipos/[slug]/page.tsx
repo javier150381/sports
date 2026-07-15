@@ -3,7 +3,10 @@ import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
 import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { MemeCarousel } from '@/features/content/meme-carousel'
-import { getNextExternalTeamEvents } from '@/server/football/thesportsdb-provider'
+import {
+  getExternalLeagueTable,
+  getNextExternalTeamEvents,
+} from '@/server/football/thesportsdb-provider'
 import { getTeamBySlug } from '@/server/teams/queries'
 
 type TeamPageProps = {
@@ -132,6 +135,25 @@ function formatExternalScore(event: NonNullable<Awaited<ReturnType<typeof getNex
   return `${event.homeScore} - ${event.awayScore}`
 }
 
+function normalizeTeamName(value: string | null) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+function teamNameMatches(rowTeam: string | null, teamName: string | null) {
+  const normalizedRowTeam = normalizeTeamName(rowTeam)
+  const normalizedTeamName = normalizeTeamName(teamName)
+
+  return (
+    normalizedRowTeam.length > 0 &&
+    normalizedTeamName.length > 0 &&
+    (normalizedRowTeam.includes(normalizedTeamName) ||
+      normalizedTeamName.includes(normalizedRowTeam))
+  )
+}
+
 export default async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params
   const team = await getTeamBySlug(slug)
@@ -142,6 +164,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
   const nextExternalEvent = externalEvents[0] ?? null
+  const leagueTable = await getExternalLeagueTable(
+    nextExternalEvent?.leagueExternalId ?? null,
+    nextExternalEvent?.season ?? null,
+  )
   const now = new Date()
   const nextFixture =
     team.fixtures
@@ -269,6 +295,57 @@ export default async function TeamPage({ params }: TeamPageProps) {
             <p className="mt-4 text-muted">No hay proximos partidos para este equipo.</p>
           )}
         </article>
+
+        {leagueTable.length > 0 ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              Tabla de posiciones
+            </p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
+              {nextExternalEvent?.league ?? 'Liga'} {nextExternalEvent?.season ?? ''}
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-sm">
+                <thead className="text-xs uppercase text-muted">
+                  <tr className="border-b border-border">
+                    <th className="py-2 pr-2">#</th>
+                    <th className="py-2 pr-2">Equipo</th>
+                    <th className="py-2 pr-2 text-center">PJ</th>
+                    <th className="py-2 pr-2 text-center">G</th>
+                    <th className="py-2 pr-2 text-center">E</th>
+                    <th className="py-2 pr-2 text-center">P</th>
+                    <th className="py-2 pr-2 text-center">DG</th>
+                    <th className="py-2 text-right">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leagueTable.map((row) => {
+                    const isCurrentTeam =
+                      teamNameMatches(row.team, team.short_name) || teamNameMatches(row.team, team.name)
+
+                    return (
+                      <tr
+                        key={`${row.rank}-${row.team}`}
+                        className={`border-b border-border/70 last:border-0 ${
+                          isCurrentTeam ? 'bg-accent/15 text-white' : ''
+                        }`}
+                      >
+                        <td className="py-3 pr-2 font-bold">{row.rank}</td>
+                        <td className="py-3 pr-2 font-bold">{row.team}</td>
+                        <td className="py-3 pr-2 text-center">{row.played}</td>
+                        <td className="py-3 pr-2 text-center">{row.won}</td>
+                        <td className="py-3 pr-2 text-center">{row.drawn}</td>
+                        <td className="py-3 pr-2 text-center">{row.lost}</td>
+                        <td className="py-3 pr-2 text-center">{row.goalDifference}</td>
+                        <td className="py-3 text-right font-black">{row.points}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        ) : null}
 
         {dataExternalEvent || dataFixture ? (
           <article className="rounded border border-border bg-panel p-5">

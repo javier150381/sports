@@ -62,6 +62,21 @@ const eventHighlightsResponseSchema = z.object({
   tvhighlights: z.array(unknownRecordSchema).nullable().optional(),
 })
 
+const leagueTableRowSchema = z.object({
+  intRank: z.string().nullable(),
+  strTeam: z.string().nullable(),
+  intPlayed: z.string().nullable(),
+  intWin: z.string().nullable(),
+  intDraw: z.string().nullable(),
+  intLoss: z.string().nullable(),
+  intGoalDifference: z.string().nullable(),
+  intPoints: z.string().nullable(),
+})
+
+const leagueTableResponseSchema = z.object({
+  table: z.array(leagueTableRowSchema).nullable().optional(),
+})
+
 export type ExternalTeamEvent = {
   id: string
   leagueExternalId: string | null
@@ -95,6 +110,17 @@ export type ExternalEventBundle = {
   highlights: Record<string, unknown>[]
 }
 
+export type ExternalLeagueTableRow = {
+  rank: number | null
+  team: string | null
+  played: number | null
+  won: number | null
+  drawn: number | null
+  lost: number | null
+  goalDifference: number | null
+  points: number | null
+}
+
 function getFootballApiBaseUrl() {
   return process.env.FOOTBALL_API_BASE_URL?.replace(/\/$/, '') ?? null
 }
@@ -118,6 +144,10 @@ function parseScore(value: string | null) {
 
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseNumber(value: string | null) {
+  return parseScore(value)
 }
 
 async function fetchSportsDbJson(endpoint: string, params: Record<string, string>) {
@@ -229,6 +259,34 @@ export async function getNextExternalTeamEvents(teamExternalId: string | null) {
 
 export async function getPreviousExternalTeamEvents(teamExternalId: string | null) {
   return getExternalTeamEvents('eventslast.php', teamExternalId)
+}
+
+export async function getExternalLeagueTable(
+  leagueExternalId: string | null,
+  season: string | null,
+): Promise<ExternalLeagueTableRow[]> {
+  if (!leagueExternalId || !season || !/^\d+$/.test(leagueExternalId)) {
+    return []
+  }
+
+  const parsed = leagueTableResponseSchema.safeParse(
+    await fetchSportsDbJson('lookuptable.php', { l: leagueExternalId, s: season }),
+  )
+
+  if (!parsed.success) {
+    return []
+  }
+
+  return (parsed.data.table ?? []).map((row) => ({
+    rank: parseNumber(row.intRank),
+    team: row.strTeam,
+    played: parseNumber(row.intPlayed),
+    won: parseNumber(row.intWin),
+    drawn: parseNumber(row.intDraw),
+    lost: parseNumber(row.intLoss),
+    goalDifference: parseNumber(row.intGoalDifference),
+    points: parseNumber(row.intPoints),
+  }))
 }
 
 export async function getExternalEventBundle(event: ExternalTeamEvent): Promise<ExternalEventBundle> {
