@@ -3,7 +3,15 @@ import { getAdminTeams } from '@/server/admin/team-queries'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminTeamsPage() {
+type AdminTeamsPageProps = {
+  searchParams?: Promise<{
+    created?: string
+    error?: string
+  }>
+}
+
+export default async function AdminTeamsPage({ searchParams }: AdminTeamsPageProps) {
+  const params = await searchParams
   const teams = await getAdminTeams()
 
   return (
@@ -13,6 +21,18 @@ export default async function AdminTeamsPage() {
         Edita la ficha publica de cada equipo. Para Macará puedes preparar la experiencia de
         Sudamericana con descripcion, colores, logo y referencia API.
       </p>
+
+      {params?.created ? (
+        <div className="mt-5 rounded border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">
+          Equipo creado correctamente: {params.created}
+        </div>
+      ) : null}
+
+      {params?.error ? (
+        <div className="mt-5 rounded border border-accent/70 bg-accent/10 px-4 py-3 text-sm font-bold text-accent-strong">
+          No se pudo crear el equipo: {params.error}
+        </div>
+      ) : null}
 
       <form action={createTeamAction} className="mt-8 rounded border border-border bg-panel p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

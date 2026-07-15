@@ -1,5 +1,6 @@
 'use server'
 
+import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireRole } from '@/server/auth/authorization'
@@ -8,6 +9,20 @@ import { teamCreateSchema, teamUpdateSchema } from './team-schemas'
 
 function optionalValue(value: string | undefined) {
   return value && value.trim().length > 0 ? value.trim() : null
+}
+
+function adminTeamsPath(message: { created?: string; error?: string }): Route {
+  const params = new URLSearchParams()
+
+  if (message.created) {
+    params.set('created', message.created)
+  }
+
+  if (message.error) {
+    params.set('error', message.error)
+  }
+
+  return `/admin/equipos?${params.toString()}` as Route
 }
 
 function createSlug(value: string) {
@@ -39,14 +54,14 @@ export async function createTeamAction(formData: FormData) {
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? 'Equipo invalido.')
+    redirect(adminTeamsPath({ error: parsed.error.issues[0]?.message ?? 'Equipo invalido.' }))
   }
 
   const input = parsed.data
   const slug = createSlug(input.name)
 
   if (!slug) {
-    throw new Error('No se pudo crear el slug del equipo.')
+    redirect(adminTeamsPath({ error: 'No se pudo crear el slug del equipo.' }))
   }
 
   const supabase = await createSupabaseServerClient()
@@ -64,14 +79,15 @@ export async function createTeamAction(formData: FormData) {
 
   if (error) {
     if (error.code === '23505') {
-      throw new Error('Ya existe un equipo con ese nombre o slug.')
+      redirect(adminTeamsPath({ error: 'Ya existe un equipo con ese nombre o slug.' }))
     }
 
-    throw new Error(error.message)
+    redirect(adminTeamsPath({ error: error.message }))
   }
 
   revalidatePath('/admin/equipos')
   revalidatePath('/equipos')
+  redirect(adminTeamsPath({ created: input.name }))
 }
 
 export async function updateTeamAction(formData: FormData) {
