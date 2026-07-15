@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
-export const teamUpdateSchema = z.object({
-  id: z.string().uuid(),
+const teamBaseSchema = z.object({
   name: z.string().min(2, 'El nombre es obligatorio.'),
   short_name: z.string().min(2).max(8).or(z.literal('')).optional(),
   description: z.string().or(z.literal('')).optional(),
@@ -12,4 +11,11 @@ export const teamUpdateSchema = z.object({
   active: z.boolean(),
 })
 
+export const teamCreateSchema = teamBaseSchema
+
+export const teamUpdateSchema = teamBaseSchema.extend({
+  id: z.string().uuid(),
+})
+
+export type TeamCreateInput = z.infer<typeof teamCreateSchema>
 export type TeamUpdateInput = z.infer<typeof teamUpdateSchema>
