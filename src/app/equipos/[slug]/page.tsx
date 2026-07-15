@@ -7,6 +7,7 @@ import { MemeCarousel } from '@/features/content/meme-carousel'
 import { VideoCarousel } from '@/features/content/video-carousel'
 import {
   getExternalLeagueTable,
+  getExternalEventBundle,
   getExternalTeamEquipment,
   getExternalTeamPlayers,
   getNextExternalTeamEvents,
@@ -201,6 +202,42 @@ function getLineupForTeam(records: Record<string, unknown>[] | undefined, teamNa
     .sort((first, second) => Number(first.substitute) - Number(second.substitute))
 }
 
+function getTimelineItems(records: Record<string, unknown>[] | undefined) {
+  return (records ?? [])
+    .map((record, index) => {
+      const minute =
+        getRecordText(record, 'intTime') ??
+        getRecordText(record, 'strMinute') ??
+        getRecordText(record, 'intMinute') ??
+        getRecordText(record, 'strTime')
+      const type =
+        getRecordText(record, 'strTimeline') ??
+        getRecordText(record, 'strEvent') ??
+        getRecordText(record, 'strType') ??
+        'Evento'
+      const player =
+        getRecordText(record, 'strPlayer') ??
+        getRecordText(record, 'strPlayerName') ??
+        getRecordText(record, 'strHomePlayer') ??
+        getRecordText(record, 'strAwayPlayer')
+      const team = getRecordText(record, 'strTeam')
+      const detail =
+        getRecordText(record, 'strTimelineDetail') ??
+        getRecordText(record, 'strDetail') ??
+        getRecordText(record, 'strComment')
+
+      return {
+        id: getRecordText(record, 'idTimeline') ?? `${minute ?? 'event'}-${type}-${index}`,
+        minute,
+        type,
+        player,
+        team,
+        detail,
+      }
+    })
+    .sort((first, second) => Number(second.minute ?? 0) - Number(first.minute ?? 0))
+}
+
 export default async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params
   const team = await getTeamBySlug(slug)
@@ -211,6 +248,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
   const nextExternalEvent = externalEvents[0] ?? null
+  const externalEventBundle = nextExternalEvent ? await getExternalEventBundle(nextExternalEvent) : null
   const leagueTable = await getExternalLeagueTable(
     nextExternalEvent?.leagueExternalId ?? null,
     nextExternalEvent?.season ?? null,
@@ -233,6 +271,11 @@ export default async function TeamPage({ params }: TeamPageProps) {
     null
   const dataFixture = liveFixture ?? nextFixture ?? recentFixture
   const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
+  const timelineItems = getTimelineItems(
+    externalEventBundle?.timeline.length
+      ? externalEventBundle.timeline
+      : dataFixture?.live_data?.timeline,
+  )
   const homeLineup = getLineupForTeam(dataFixture?.live_data?.lineup, dataFixture?.home_team?.name ?? null)
   const awayLineup = getLineupForTeam(dataFixture?.live_data?.lineup, dataFixture?.away_team?.name ?? null)
   const dataExternalEvent = nextExternalEvent ?? null
@@ -473,6 +516,55 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 </Link>
               ) : null}
             </div>
+          </article>
+        ) : null}
+
+        {dataExternalEvent || dataFixture ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              Minuto a minuto
+            </p>
+            <div className="mt-4 rounded border border-border bg-background/40 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
+                {dataExternalEvent?.status ?? dataFixture?.status ?? 'Partido'}
+              </p>
+              <h3 className="mt-2 text-xl font-black">
+                {dataExternalEvent
+                  ? `${dataExternalEvent.homeTeam} ${formatExternalScore(dataExternalEvent)} ${
+                      dataExternalEvent.awayTeam
+                    }`
+                  : `${dataFixture?.home_team?.name} ${dataFixture ? formatFixtureScore(dataFixture) : 'vs.'} ${
+                      dataFixture?.away_team?.name
+                    }`}
+              </h3>
+            </div>
+            {timelineItems.length > 0 ? (
+              <div className="mt-4 grid gap-3">
+                {timelineItems.map((item) => (
+                  <div key={item.id} className="rounded border border-border px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <span className="min-w-10 rounded bg-accent px-2 py-1 text-center text-xs font-black text-white">
+                        {item.minute ? `${item.minute}'` : '--'}
+                      </span>
+                      <div>
+                        <p className="font-black">{item.type}</p>
+                        <p className="mt-1 text-sm text-muted">
+                          {[item.player, item.team].filter(Boolean).join(' - ')}
+                        </p>
+                        {item.detail ? (
+                          <p className="mt-1 text-sm text-muted">{item.detail}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-muted">
+                TheSportsDB todavia no publico eventos minuto a minuto para este partido. Cuando
+                haya goles, tarjetas o cambios, apareceran aqui al sincronizar.
+              </p>
+            )}
           </article>
         ) : null}
 
