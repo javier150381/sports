@@ -164,44 +164,6 @@ function getRecordText(record: Record<string, unknown>, key: string) {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
-function isSubstitute(record: Record<string, unknown>) {
-  const value =
-    getRecordText(record, 'strSubstitute') ??
-    getRecordText(record, 'strRole') ??
-    getRecordText(record, 'strLineup')
-
-  return value ? /sub|bench|yes|true|suplente/i.test(value) : false
-}
-
-function getLineupForTeam(records: Record<string, unknown>[] | undefined, teamName: string | null) {
-  const lineup = records ?? []
-  const teamLineup = lineup.filter((record) => {
-    const recordTeam = getRecordText(record, 'strTeam')
-    return teamNameMatches(recordTeam, teamName)
-  })
-
-  return teamLineup
-    .map((record, index) => {
-      const name =
-        getRecordText(record, 'strPlayer') ??
-        getRecordText(record, 'strPlayerName') ??
-        getRecordText(record, 'strName') ??
-        'Jugador'
-      const position =
-        getRecordText(record, 'strPosition') ??
-        getRecordText(record, 'strFormation') ??
-        getRecordText(record, 'strNumber')
-
-      return {
-        id: getRecordText(record, 'idLineup') ?? getRecordText(record, 'idPlayer') ?? `${name}-${index}`,
-        name,
-        position,
-        substitute: isSubstitute(record),
-      }
-    })
-    .sort((first, second) => Number(first.substitute) - Number(second.substitute))
-}
-
 function getTimelineItems(records: Record<string, unknown>[] | undefined) {
   return (records ?? [])
     .map((record, index) => {
@@ -276,8 +238,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
       ? externalEventBundle.timeline
       : dataFixture?.live_data?.timeline,
   )
-  const homeLineup = getLineupForTeam(dataFixture?.live_data?.lineup, dataFixture?.home_team?.name ?? null)
-  const awayLineup = getLineupForTeam(dataFixture?.live_data?.lineup, dataFixture?.away_team?.name ?? null)
   const dataExternalEvent = nextExternalEvent ?? null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const videos = team.content.filter((post) =>
@@ -483,9 +443,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
               ) : null}
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-muted">
                 <span className="rounded border border-border px-3 py-2">
-                  Alineaciones {countItems(dataFixture?.live_data?.lineup)}
-                </span>
-                <span className="rounded border border-border px-3 py-2">
                   Eventos {countItems(dataFixture?.live_data?.timeline)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
@@ -565,43 +522,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 haya goles, tarjetas o cambios, apareceran aqui al sincronizar.
               </p>
             )}
-          </article>
-        ) : null}
-
-        {dataFixture ? (
-          <article className="rounded border border-border bg-panel p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
-              Alineaciones del partido
-            </p>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {[
-                { title: dataFixture.home_team?.name ?? 'Local', players: homeLineup },
-                { title: dataFixture.away_team?.name ?? 'Visitante', players: awayLineup },
-              ].map((group) => (
-                <div key={group.title} className="rounded border border-border bg-background/40 p-4">
-                  <h3 className="font-black">{group.title}</h3>
-                  {group.players.length > 0 ? (
-                    <div className="mt-3 grid gap-2">
-                      {group.players.slice(0, 18).map((player) => (
-                        <div
-                          key={player.id}
-                          className="flex items-center justify-between gap-3 rounded border border-border px-3 py-2 text-sm"
-                        >
-                          <span className="font-bold">{player.name}</span>
-                          <span className="text-xs text-muted">
-                            {player.substitute ? 'Suplente' : (player.position ?? 'Titular')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-muted">
-                      Alineacion todavia no disponible en TheSportsDB.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
           </article>
         ) : null}
 
