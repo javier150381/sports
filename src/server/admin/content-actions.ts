@@ -12,8 +12,24 @@ function adminContentPath(message: string): Route {
   return `/admin/contenidos?${params.toString()}` as Route
 }
 
+function adminContentErrorPath(error: string): Route {
+  const params = new URLSearchParams({ error })
+  return `/admin/contenidos?${params.toString()}` as Route
+}
+
 function optionalValue(value: string | undefined) {
   return value && value.trim().length > 0 ? value.trim() : null
+}
+
+function getContentErrorCode(message: string) {
+  if (
+    message.includes('content_type') ||
+    message.includes('invalid input value for enum')
+  ) {
+    return 'content-type'
+  }
+
+  return 'save'
 }
 
 export async function createContentPostAction(formData: FormData) {
@@ -31,14 +47,17 @@ export async function createContentPostAction(formData: FormData) {
     image_url: formData.get('image_url'),
     alt_text: formData.get('alt_text'),
     team_id: formData.get('team_id'),
-    status: formData.get('intent') === 'publish' ? 'PUBLISHED' : formData.get('status'),
+    status:
+      formData.get('intent') === 'publish'
+        ? 'PUBLISHED'
+        : formData.get('status'),
     is_featured: formData.get('is_featured') === 'on',
     nfc_exclusive: formData.get('nfc_exclusive') === 'on',
     display_order: formData.get('display_order'),
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? 'Contenido invalido.')
+    redirect(adminContentErrorPath('invalid'))
   }
 
   const input = parsed.data
@@ -55,18 +74,21 @@ export async function createContentPostAction(formData: FormData) {
     is_featured: input.is_featured,
     nfc_exclusive: input.nfc_exclusive,
     display_order: input.display_order,
-    published_at: input.status === 'PUBLISHED' ? new Date().toISOString() : null,
+    published_at:
+      input.status === 'PUBLISHED' ? new Date().toISOString() : null,
     created_by: profile.id,
   })
 
   if (error) {
-    throw new Error(error.message)
+    redirect(adminContentErrorPath(getContentErrorCode(error.message)))
   }
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
   revalidatePath('/equipos/[slug]', 'page')
-  redirect(adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'))
+  redirect(
+    adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'),
+  )
 }
 
 export async function updateContentStatusAction(formData: FormData) {
@@ -89,7 +111,8 @@ export async function updateContentStatusAction(formData: FormData) {
     .from('content_posts')
     .update({
       status: parsedStatus.data,
-      published_at: parsedStatus.data === 'PUBLISHED' ? new Date().toISOString() : null,
+      published_at:
+        parsedStatus.data === 'PUBLISHED' ? new Date().toISOString() : null,
     })
     .eq('id', id)
 
@@ -100,7 +123,9 @@ export async function updateContentStatusAction(formData: FormData) {
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
   revalidatePath('/equipos/[slug]', 'page')
-  redirect(adminContentPath(parsedStatus.data === 'PUBLISHED' ? 'published' : 'saved'))
+  redirect(
+    adminContentPath(parsedStatus.data === 'PUBLISHED' ? 'published' : 'saved'),
+  )
 }
 
 export async function moveContentPostAction(formData: FormData) {
@@ -164,7 +189,10 @@ export async function moveContentPostAction(formData: FormData) {
   reorderedPosts.splice(nextIndex, 0, selectedPost)
 
   const updates = reorderedPosts.map((post, index) =>
-    supabase.from('content_posts').update({ display_order: index }).eq('id', post.id),
+    supabase
+      .from('content_posts')
+      .update({ display_order: index })
+      .eq('id', post.id),
   )
 
   const results = await Promise.all(updates)
@@ -199,14 +227,17 @@ export async function updateContentPostAction(formData: FormData) {
     image_url: formData.get('image_url'),
     alt_text: formData.get('alt_text'),
     team_id: formData.get('team_id'),
-    status: formData.get('intent') === 'publish' ? 'PUBLISHED' : formData.get('status'),
+    status:
+      formData.get('intent') === 'publish'
+        ? 'PUBLISHED'
+        : formData.get('status'),
     is_featured: formData.get('is_featured') === 'on',
     nfc_exclusive: formData.get('nfc_exclusive') === 'on',
     display_order: formData.get('display_order'),
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? 'Contenido invalido.')
+    redirect(adminContentErrorPath('invalid'))
   }
 
   const input = parsed.data
@@ -225,18 +256,21 @@ export async function updateContentPostAction(formData: FormData) {
       is_featured: input.is_featured,
       nfc_exclusive: input.nfc_exclusive,
       display_order: input.display_order,
-      published_at: input.status === 'PUBLISHED' ? new Date().toISOString() : null,
+      published_at:
+        input.status === 'PUBLISHED' ? new Date().toISOString() : null,
     })
     .eq('id', id)
 
   if (error) {
-    throw new Error(error.message)
+    redirect(adminContentErrorPath(getContentErrorCode(error.message)))
   }
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
   revalidatePath('/equipos/[slug]', 'page')
-  redirect(adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'))
+  redirect(
+    adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'),
+  )
 }
 
 export async function deleteContentPostAction(formData: FormData) {

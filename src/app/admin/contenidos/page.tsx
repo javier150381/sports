@@ -27,7 +27,7 @@ const contentTypes = [
 export const dynamic = 'force-dynamic'
 
 type AdminContentPageProps = {
-  searchParams?: Promise<{ message?: string; team?: string }>
+  searchParams?: Promise<{ error?: string; message?: string; team?: string }>
 }
 
 function getMessageText(message?: string) {
@@ -46,11 +46,28 @@ function getMessageText(message?: string) {
   return null
 }
 
+function getErrorText(error?: string) {
+  if (error === 'content-type') {
+    return 'Supabase todavia no acepta este tipo de contenido. Ejecuta la migracion WEB_EMBED en SQL Editor y vuelve a intentar.'
+  }
+
+  if (error === 'invalid') {
+    return 'Revisa los campos del contenido. Hay un dato invalido o incompleto.'
+  }
+
+  if (error === 'save') {
+    return 'No se pudo guardar el contenido. Revisa Supabase y vuelve a intentar.'
+  }
+
+  return null
+}
+
 export default async function AdminContentPage({
   searchParams,
 }: AdminContentPageProps) {
   const params = await searchParams
   const message = getMessageText(params?.message)
+  const error = getErrorText(params?.error)
   const { teams, posts, selectedTeam } = await getAdminContentPageData(
     params?.team,
   )
@@ -88,6 +105,12 @@ export default async function AdminContentPage({
       {message ? (
         <div className="mt-5 rounded border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">
           {message}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mt-5 rounded border border-accent/70 bg-accent/10 px-4 py-3 text-sm font-bold text-accent-strong">
+          {error}
         </div>
       ) : null}
 
