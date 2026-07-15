@@ -21,6 +21,7 @@ const contentTypes = [
   'LIVE_STREAM',
   'WALLPAPER',
   'ANNOUNCEMENT',
+  'WEB_EMBED',
 ]
 
 export const dynamic = 'force-dynamic'

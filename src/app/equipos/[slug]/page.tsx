@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic'
 
 type EmbedInfo = {
   url: string
-  kind: 'youtube' | 'tiktok' | 'tiktok-script' | 'drive'
+  kind: 'youtube' | 'tiktok' | 'tiktok-script' | 'drive' | 'web'
 }
 
 function getEmbedFrameClass(kind: EmbedInfo['kind']) {
@@ -33,10 +33,17 @@ function getEmbedFrameClass(kind: EmbedInfo['kind']) {
     return 'aspect-video'
   }
 
+  if (kind === 'web') {
+    return 'h-[70vh] min-h-[520px]'
+  }
+
   return 'aspect-video'
 }
 
-function getEmbedInfo(url: string | null): EmbedInfo | null {
+function getEmbedInfo(
+  url: string | null,
+  contentType?: string,
+): EmbedInfo | null {
   if (!url) {
     return null
   }
@@ -47,12 +54,16 @@ function getEmbedInfo(url: string | null): EmbedInfo | null {
 
     if (host === 'youtube.com' || host === 'm.youtube.com') {
       const videoId = parsed.searchParams.get('v')
-      return videoId ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' } : null
+      return videoId
+        ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' }
+        : null
     }
 
     if (host === 'youtu.be') {
       const videoId = parsed.pathname.split('/').filter(Boolean)[0]
-      return videoId ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' } : null
+      return videoId
+        ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' }
+        : null
     }
 
     if (host === 'tiktok.com' || host === 'm.tiktok.com') {
@@ -72,11 +83,19 @@ function getEmbedInfo(url: string | null): EmbedInfo | null {
     if (host === 'drive.google.com') {
       const parts = parsed.pathname.split('/').filter(Boolean)
       const fileIndex = parts.findIndex((part) => part === 'd')
-      const fileId = fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
+      const fileId =
+        fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
 
       return fileId
-        ? { url: `https://drive.google.com/file/d/${fileId}/preview`, kind: 'drive' }
+        ? {
+            url: `https://drive.google.com/file/d/${fileId}/preview`,
+            kind: 'drive',
+          }
         : null
+    }
+
+    if (contentType === 'WEB_EMBED') {
+      return { url: parsed.toString(), kind: 'web' }
     }
   } catch {
     return null
@@ -104,7 +123,11 @@ function countItems(items?: unknown[]) {
   return Array.isArray(items) ? items.length : 0
 }
 
-function hasSyncedDetails(fixture: NonNullable<Awaited<ReturnType<typeof getTeamBySlug>>>['fixtures'][number]) {
+function hasSyncedDetails(
+  fixture: NonNullable<
+    Awaited<ReturnType<typeof getTeamBySlug>>
+  >['fixtures'][number],
+) {
   const liveData = fixture.live_data
 
   if (!liveData) {
@@ -122,7 +145,9 @@ function hasSyncedDetails(fixture: NonNullable<Awaited<ReturnType<typeof getTeam
 }
 
 function formatFixtureScore(
-  fixture: NonNullable<Awaited<ReturnType<typeof getTeamBySlug>>>['fixtures'][number],
+  fixture: NonNullable<
+    Awaited<ReturnType<typeof getTeamBySlug>>
+  >['fixtures'][number],
 ) {
   if (fixture.home_score === null || fixture.away_score === null) {
     return 'vs.'
@@ -131,7 +156,11 @@ function formatFixtureScore(
   return `${fixture.home_score} - ${fixture.away_score}`
 }
 
-function formatExternalScore(event: NonNullable<Awaited<ReturnType<typeof getNextExternalTeamEvents>>[number]>) {
+function formatExternalScore(
+  event: NonNullable<
+    Awaited<ReturnType<typeof getNextExternalTeamEvents>>[number]
+  >,
+) {
   if (event.homeScore === null || event.awayScore === null) {
     return 'vs.'
   }
@@ -188,7 +217,9 @@ function getTimelineItems(records: Record<string, unknown>[] | undefined) {
         getRecordText(record, 'strComment')
 
       return {
-        id: getRecordText(record, 'idTimeline') ?? `${minute ?? 'event'}-${type}-${index}`,
+        id:
+          getRecordText(record, 'idTimeline') ??
+          `${minute ?? 'event'}-${type}-${index}`,
         minute,
         type,
         player,
@@ -196,7 +227,9 @@ function getTimelineItems(records: Record<string, unknown>[] | undefined) {
         detail,
       }
     })
-    .sort((first, second) => Number(second.minute ?? 0) - Number(first.minute ?? 0))
+    .sort(
+      (first, second) => Number(second.minute ?? 0) - Number(first.minute ?? 0),
+    )
 }
 
 export default async function TeamPage({ params }: TeamPageProps) {
@@ -209,7 +242,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
   const nextExternalEvent = externalEvents[0] ?? null
-  const externalEventBundle = nextExternalEvent ? await getExternalEventBundle(nextExternalEvent) : null
+  const externalEventBundle = nextExternalEvent
+    ? await getExternalEventBundle(nextExternalEvent)
+    : null
   const leagueTable = await getExternalLeagueTable(
     nextExternalEvent?.leagueExternalId ?? null,
     nextExternalEvent?.season ?? null,
@@ -219,16 +254,21 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const nextFixture =
     team.fixtures
       .filter((fixture) => new Date(fixture.match_date) > now)
-      .sort((first, second) => Date.parse(first.match_date) - Date.parse(second.match_date))[0] ??
-    null
+      .sort(
+        (first, second) =>
+          Date.parse(first.match_date) - Date.parse(second.match_date),
+      )[0] ?? null
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
   const recentFixture =
     team.fixtures
       .filter((fixture) => new Date(fixture.match_date) <= now)
-      .sort((first, second) => Date.parse(second.match_date) - Date.parse(first.match_date))[0] ??
-    null
+      .sort(
+        (first, second) =>
+          Date.parse(second.match_date) - Date.parse(first.match_date),
+      )[0] ?? null
   const dataFixture = liveFixture ?? nextFixture ?? recentFixture
-  const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
+  const syncedFixture =
+    dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
   const timelineItems = getTimelineItems(
     externalEventBundle?.timeline.length
       ? externalEventBundle.timeline
@@ -237,12 +277,16 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const dataExternalEvent = nextExternalEvent ?? null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const videos = team.content.filter((post) =>
-    ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(post.content_type),
+    ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
+      post.content_type,
+    ),
   )
   const featuredContent = team.content.filter(
     (post) =>
       post.content_type !== 'MEME' &&
-      !['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(post.content_type),
+      !['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
+        post.content_type,
+      ),
   )
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
 
@@ -250,7 +294,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
     <MobileContainer>
       <section
         className="rounded border border-border bg-panel p-5"
-        style={{ borderTopColor: team.primary_color ?? undefined, borderTopWidth: 5 }}
+        style={{
+          borderTopColor: team.primary_color ?? undefined,
+          borderTopWidth: 5,
+        }}
       >
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-strong">
           Equipo Ecuador
@@ -261,12 +308,16 @@ export default async function TeamPage({ params }: TeamPageProps) {
             style={{
               backgroundColor: team.primary_color ?? '#111827',
               color: team.secondary_color ?? '#ffffff',
-              backgroundImage: team.logo_url ? `url(${team.logo_url})` : undefined,
+              backgroundImage: team.logo_url
+                ? `url(${team.logo_url})`
+                : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
           >
-            {team.logo_url ? null : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
+            {team.logo_url
+              ? null
+              : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
           </div>
           <div>
             <h1 className="text-3xl font-black">{team.name}</h1>
@@ -283,7 +334,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
           {nextExternalEvent ? (
             <div className="mt-4">
               <p className="text-sm text-muted">
-                {[nextExternalEvent.league, externalMatchDate].filter(Boolean).join(' · ')}
+                {[nextExternalEvent.league, externalMatchDate]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
               <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
                 <div className="grid justify-items-center gap-3">
@@ -302,7 +355,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-black">{nextExternalEvent.homeTeam}</h2>
+                  <h2 className="text-base font-black">
+                    {nextExternalEvent.homeTeam}
+                  </h2>
                 </div>
                 <span className="text-sm font-black text-muted">vs.</span>
                 <div className="grid justify-items-center gap-3">
@@ -321,20 +376,28 @@ export default async function TeamPage({ params }: TeamPageProps) {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-black">{nextExternalEvent.awayTeam}</h2>
+                  <h2 className="text-base font-black">
+                    {nextExternalEvent.awayTeam}
+                  </h2>
                 </div>
               </div>
               <p className="mt-5 text-center text-sm text-muted">
                 {[
-                  nextExternalEvent.group ? `Fase ${nextExternalEvent.group}` : null,
-                  nextExternalEvent.round ? `Jornada ${nextExternalEvent.round}` : null,
+                  nextExternalEvent.group
+                    ? `Fase ${nextExternalEvent.group}`
+                    : null,
+                  nextExternalEvent.round
+                    ? `Jornada ${nextExternalEvent.round}`
+                    : null,
                   nextExternalEvent.season,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
               </p>
               {nextExternalEvent.venue ? (
-                <p className="mt-2 text-center text-xs text-muted">{nextExternalEvent.venue}</p>
+                <p className="mt-2 text-center text-xs text-muted">
+                  {nextExternalEvent.venue}
+                </p>
               ) : null}
             </div>
           ) : nextFixture ? (
@@ -351,7 +414,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
               <p className="mt-2 text-sm text-muted">{nextFixture.venue}</p>
             </div>
           ) : (
-            <p className="mt-4 text-muted">No hay proximos partidos para este equipo.</p>
+            <p className="mt-4 text-muted">
+              No hay proximos partidos para este equipo.
+            </p>
           )}
         </article>
 
@@ -361,7 +426,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
               Tabla de posiciones
             </p>
             <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-              {nextExternalEvent?.league ?? 'Liga'} {nextExternalEvent?.season ?? ''}
+              {nextExternalEvent?.league ?? 'Liga'}{' '}
+              {nextExternalEvent?.season ?? ''}
             </p>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[420px] text-left text-sm">
@@ -380,7 +446,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 <tbody>
                   {leagueTable.map((row) => {
                     const isCurrentTeam =
-                      teamNameMatches(row.team, team.short_name) || teamNameMatches(row.team, team.name)
+                      teamNameMatches(row.team, team.short_name) ||
+                      teamNameMatches(row.team, team.name)
 
                     return (
                       <tr
@@ -395,8 +462,12 @@ export default async function TeamPage({ params }: TeamPageProps) {
                         <td className="py-3 pr-2 text-center">{row.won}</td>
                         <td className="py-3 pr-2 text-center">{row.drawn}</td>
                         <td className="py-3 pr-2 text-center">{row.lost}</td>
-                        <td className="py-3 pr-2 text-center">{row.goalDifference}</td>
-                        <td className="py-3 text-right font-black">{row.points}</td>
+                        <td className="py-3 pr-2 text-center">
+                          {row.goalDifference}
+                        </td>
+                        <td className="py-3 text-right font-black">
+                          {row.points}
+                        </td>
                       </tr>
                     )
                   })}
@@ -413,7 +484,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
             </p>
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-                {dataExternalEvent?.league ?? dataFixture?.live_data?.league ?? 'Partido'}{' '}
+                {dataExternalEvent?.league ??
+                  dataFixture?.live_data?.league ??
+                  'Partido'}{' '}
                 {dataExternalEvent?.round
                   ? `- Jornada ${dataExternalEvent.round}`
                   : dataFixture?.live_data?.round
@@ -430,9 +503,13 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     }`}
               </h2>
               <p className="mt-2 text-sm text-muted">
-                {formatMatchDate(dataExternalEvent?.startsAt ?? dataFixture?.match_date ?? null)}
+                {formatMatchDate(
+                  dataExternalEvent?.startsAt ??
+                    dataFixture?.match_date ??
+                    null,
+                )}
               </p>
-              {dataExternalEvent?.venue ?? dataFixture?.venue ? (
+              {(dataExternalEvent?.venue ?? dataFixture?.venue) ? (
                 <p className="mt-1 text-sm text-muted">
                   {dataExternalEvent?.venue ?? dataFixture?.venue}
                 </p>
@@ -456,8 +533,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
               </div>
               {!syncedFixture ? (
                 <p className="mt-4 text-sm text-muted">
-                  La ficha del partido ya esta creada. La cobertura detallada aparecera cuando la
-                  API tenga esos datos.
+                  La ficha del partido ya esta creada. La cobertura detallada
+                  aparecera cuando la API tenga esos datos.
                 </p>
               ) : null}
               {dataFixture ? (
@@ -494,7 +571,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
             {timelineItems.length > 0 ? (
               <div className="mt-4 grid gap-3">
                 {timelineItems.map((item) => (
-                  <div key={item.id} className="rounded border border-border px-4 py-3">
+                  <div
+                    key={item.id}
+                    className="rounded border border-border px-4 py-3"
+                  >
                     <div className="flex items-start gap-3">
                       <span className="min-w-10 rounded bg-accent px-2 py-1 text-center text-xs font-black text-white">
                         {item.minute ? `${item.minute}'` : '--'}
@@ -505,7 +585,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                           {[item.player, item.team].filter(Boolean).join(' - ')}
                         </p>
                         {item.detail ? (
-                          <p className="mt-1 text-sm text-muted">{item.detail}</p>
+                          <p className="mt-1 text-sm text-muted">
+                            {item.detail}
+                          </p>
                         ) : null}
                       </div>
                     </div>
@@ -514,8 +596,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
               </div>
             ) : (
               <p className="mt-4 text-sm text-muted">
-                TheSportsDB todavia no publico eventos minuto a minuto para este partido. Cuando
-                haya goles, tarjetas o cambios, apareceran aqui al sincronizar.
+                TheSportsDB todavia no publico eventos minuto a minuto para este
+                partido. Cuando haya goles, tarjetas o cambios, apareceran aqui
+                al sincronizar.
               </p>
             )}
           </article>
@@ -528,7 +611,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {equipment.slice(0, 8).map((kit) => (
-                <div key={kit.id ?? `${kit.season}-${kit.type}`} className="rounded border border-border p-3">
+                <div
+                  key={kit.id ?? `${kit.season}-${kit.type}`}
+                  className="rounded border border-border p-3"
+                >
                   {kit.image ? (
                     <div className="relative aspect-square overflow-hidden rounded bg-background">
                       <Image
@@ -540,7 +626,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                       />
                     </div>
                   ) : null}
-                  <h3 className="mt-3 text-sm font-black">{kit.type ?? 'Equipamiento'}</h3>
+                  <h3 className="mt-3 text-sm font-black">
+                    {kit.type ?? 'Equipamiento'}
+                  </h3>
                   <p className="text-xs text-muted">{kit.season}</p>
                 </div>
               ))}
@@ -558,7 +646,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 {liveFixture.home_team?.short_name} {liveFixture.home_score} -{' '}
                 {liveFixture.away_score} {liveFixture.away_team?.short_name}
               </h2>
-              <p className="mt-2 font-mono text-accent-strong">Minuto {liveFixture.minute}</p>
+              <p className="mt-2 font-mono text-accent-strong">
+                Minuto {liveFixture.minute}
+              </p>
             </div>
           ) : (
             <p className="mt-4 text-muted">Sin marcador en vivo ahora mismo.</p>
@@ -572,10 +662,13 @@ export default async function TeamPage({ params }: TeamPageProps) {
         <h2 className="text-2xl font-black">Actualidad reciente</h2>
         <div className="mt-4 grid gap-4">
           {featuredContent.map((post) => {
-            const embed = getEmbedInfo(post.external_url)
+            const embed = getEmbedInfo(post.external_url, post.content_type)
 
             return (
-              <article key={post.id} className="overflow-hidden rounded border border-border bg-panel">
+              <article
+                key={post.id}
+                className="overflow-hidden rounded border border-border bg-panel"
+              >
                 {embed?.kind === 'tiktok-script' ? (
                   <TikTokEmbed url={embed.url} title={post.title} />
                 ) : embed ? (
@@ -587,6 +680,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
                       title={post.title}
                       className="absolute inset-0 h-full w-full border-0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allowFullScreen
                     />
                   </div>
@@ -606,7 +700,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     {post.content_type}
                   </p>
                   <h3 className="mt-3 font-black">{post.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">{post.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {post.description}
+                  </p>
                   {post.external_url && !embed ? (
                     <a
                       href={post.external_url}
@@ -616,6 +712,12 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     >
                       Ver enlace oficial
                     </a>
+                  ) : null}
+                  {embed?.kind === 'web' ? (
+                    <p className="mt-3 text-xs leading-5 text-muted">
+                      Si la pagina no carga dentro del contenedor, ese sitio
+                      bloquea la vista embebida por seguridad.
+                    </p>
                   ) : null}
                   {post.nfc_exclusive ? (
                     <p className="mt-4 rounded bg-accent/15 px-3 py-2 text-xs font-bold text-accent-strong">

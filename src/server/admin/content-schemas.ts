@@ -11,9 +11,15 @@ export const contentTypeSchema = z.enum([
   'LIVE_STREAM',
   'WALLPAPER',
   'ANNOUNCEMENT',
+  'WEB_EMBED',
 ])
 
-export const contentStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'])
+export const contentStatusSchema = z.enum([
+  'DRAFT',
+  'SCHEDULED',
+  'PUBLISHED',
+  'ARCHIVED',
+])
 
 const optionalUrlSchema = z.preprocess(
   (value) => (typeof value === 'string' ? value.trim() : value),
