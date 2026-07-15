@@ -21,6 +21,19 @@ export type TeamDetail = TeamListItem & {
     minute: number | null
     home_score: number | null
     away_score: number | null
+    live_data: {
+      league?: string
+      round?: number
+      group?: string
+      homeBadge?: string
+      awayBadge?: string
+      results?: Record<string, unknown>[]
+      lineup?: Record<string, unknown>[]
+      timeline?: Record<string, unknown>[]
+      stats?: Record<string, unknown>[]
+      tv?: Record<string, unknown>[]
+      highlights?: Record<string, unknown>[]
+    } | null
     home_team: { name: string; short_name: string | null } | null
     away_team: { name: string; short_name: string | null } | null
   }>
@@ -90,7 +103,7 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
     supabase
       .from('fixtures')
       .select(
-        'id, match_date, venue, status, minute, home_score, away_score, home_team:home_team_id(name, short_name), away_team:away_team_id(name, short_name)',
+        'id, match_date, venue, status, minute, home_score, away_score, live_data, home_team:home_team_id(name, short_name), away_team:away_team_id(name, short_name)',
       )
       .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`)
       .order('match_date', { ascending: false })

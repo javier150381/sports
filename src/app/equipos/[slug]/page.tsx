@@ -93,6 +93,37 @@ function formatMatchDate(value: string | null) {
   }).format(new Date(value))
 }
 
+function countItems(items?: unknown[]) {
+  return Array.isArray(items) ? items.length : 0
+}
+
+function hasSyncedDetails(fixture: NonNullable<Awaited<ReturnType<typeof getTeamBySlug>>>['fixtures'][number]) {
+  const liveData = fixture.live_data
+
+  if (!liveData) {
+    return false
+  }
+
+  return (
+    countItems(liveData.results) > 0 ||
+    countItems(liveData.lineup) > 0 ||
+    countItems(liveData.timeline) > 0 ||
+    countItems(liveData.stats) > 0 ||
+    countItems(liveData.tv) > 0 ||
+    countItems(liveData.highlights) > 0
+  )
+}
+
+function formatFixtureScore(
+  fixture: NonNullable<Awaited<ReturnType<typeof getTeamBySlug>>>['fixtures'][number],
+) {
+  if (fixture.home_score === null || fixture.away_score === null) {
+    return 'vs.'
+  }
+
+  return `${fixture.home_score} - ${fixture.away_score}`
+}
+
 export default async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params
   const team = await getTeamBySlug(slug)
@@ -103,8 +134,20 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
   const nextExternalEvent = externalEvents[0] ?? null
-  const nextFixture = team.fixtures.find((fixture) => new Date(fixture.match_date) > new Date())
+  const now = new Date()
+  const nextFixture =
+    team.fixtures
+      .filter((fixture) => new Date(fixture.match_date) > now)
+      .sort((first, second) => Date.parse(first.match_date) - Date.parse(second.match_date))[0] ??
+    null
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
+  const recentFixture =
+    team.fixtures
+      .filter((fixture) => new Date(fixture.match_date) <= now)
+      .sort((first, second) => Date.parse(second.match_date) - Date.parse(first.match_date))[0] ??
+    null
+  const dataFixture = liveFixture ?? recentFixture ?? nextFixture
+  const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
@@ -217,6 +260,54 @@ export default async function TeamPage({ params }: TeamPageProps) {
             <p className="mt-4 text-muted">No hay proximos partidos para este equipo.</p>
           )}
         </article>
+
+        {dataFixture ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              Datos TheSportsDB
+            </p>
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
+                {dataFixture.live_data?.league ?? 'Partido'}{' '}
+                {dataFixture.live_data?.round ? `- Jornada ${dataFixture.live_data.round}` : ''}
+              </p>
+              <h2 className="mt-3 text-xl font-black">
+                {dataFixture.home_team?.name} {formatFixtureScore(dataFixture)}{' '}
+                {dataFixture.away_team?.name}
+              </h2>
+              <p className="mt-2 text-sm text-muted">{formatMatchDate(dataFixture.match_date)}</p>
+              {dataFixture.venue ? (
+                <p className="mt-1 text-sm text-muted">{dataFixture.venue}</p>
+              ) : null}
+              <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-muted">
+                <span className="rounded border border-border px-3 py-2">
+                  Alineaciones {countItems(dataFixture.live_data?.lineup)}
+                </span>
+                <span className="rounded border border-border px-3 py-2">
+                  Eventos {countItems(dataFixture.live_data?.timeline)}
+                </span>
+                <span className="rounded border border-border px-3 py-2">
+                  Stats {countItems(dataFixture.live_data?.stats)}
+                </span>
+                <span className="rounded border border-border px-3 py-2">
+                  TV {countItems(dataFixture.live_data?.tv)}
+                </span>
+                <span className="rounded border border-border px-3 py-2">
+                  Highlights {countItems(dataFixture.live_data?.highlights)}
+                </span>
+                <span className="rounded border border-border px-3 py-2">
+                  Resultado {countItems(dataFixture.live_data?.results)}
+                </span>
+              </div>
+              {!syncedFixture ? (
+                <p className="mt-4 text-sm text-muted">
+                  La ficha del partido ya esta creada. La cobertura detallada aparecera cuando la
+                  API tenga esos datos.
+                </p>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
 
         <article className="rounded border border-border bg-panel p-5">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
