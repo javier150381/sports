@@ -26,6 +26,13 @@ export type AdminFixture = {
   away_team: { name: string; slug: string } | null
 }
 
+export type SyncableTeam = {
+  id: string
+  name: string
+  slug: string
+  external_api_id: string | null
+}
+
 type FixtureRow = Omit<AdminFixture, 'home_team' | 'away_team'> & {
   home_team: AdminFixture['home_team'] | AdminFixture['home_team'][]
   away_team: AdminFixture['away_team'] | AdminFixture['away_team'][]
@@ -37,6 +44,22 @@ function firstRelation<T>(value: T | T[] | null): T | null {
   }
 
   return value
+}
+
+export async function getSyncableTeams() {
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase
+    .from('teams')
+    .select('id, name, slug, external_api_id')
+    .eq('active', true)
+    .not('external_api_id', 'is', null)
+    .order('name')
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data as SyncableTeam[]
 }
 
 export async function getAdminFixtures() {

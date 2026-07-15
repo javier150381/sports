@@ -1,11 +1,12 @@
-import { syncMacaraFixturesAction } from '@/server/admin/fixture-actions'
-import { getAdminFixtures } from '@/server/admin/fixture-queries'
+import { syncTeamFixturesAction } from '@/server/admin/fixture-actions'
+import { getAdminFixtures, getSyncableTeams } from '@/server/admin/fixture-queries'
 
 export const dynamic = 'force-dynamic'
 
 type AdminFixturesPageProps = {
   searchParams?: Promise<{
     synced?: string
+    team?: string
     error?: string
   }>
 }
@@ -24,7 +25,7 @@ function countItems(items?: unknown[]) {
 
 export default async function AdminFixturesPage({ searchParams }: AdminFixturesPageProps) {
   const params = await searchParams
-  const fixtures = await getAdminFixtures()
+  const [fixtures, syncableTeams] = await Promise.all([getAdminFixtures(), getSyncableTeams()])
 
   return (
     <div>
@@ -36,7 +37,7 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
 
       {params?.synced ? (
         <div className="mt-5 rounded border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">
-          Partidos de Macara sincronizados: {params.synced}
+          Partidos sincronizados{params.team ? ` para ${params.team}` : ''}: {params.synced}
         </div>
       ) : null}
 
@@ -50,17 +51,30 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
           TheSportsDB
         </p>
-        <h2 className="mt-2 text-2xl font-black">Sincronizar Macara</h2>
+        <h2 className="mt-2 text-2xl font-black">Sincronizar equipos</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Trae proximos partidos, ultimo resultado, alineaciones, eventos, estadisticas, TV y
           highlights cuando TheSportsDB los tenga. Tambien crea rivales si no existen y actualiza
           el calendario sin duplicar eventos.
         </p>
-        <form action={syncMacaraFixturesAction}>
-          <button type="submit" className="mt-5 rounded bg-accent px-5 py-3 font-black text-white">
-            Sincronizar partidos de Macara
-          </button>
-        </form>
+        <div className="mt-5 flex flex-wrap gap-3">
+          {syncableTeams.map((team) => (
+            <form key={team.id} action={syncTeamFixturesAction}>
+              <input type="hidden" name="teamSlug" value={team.slug} />
+              <button
+                type="submit"
+                className="rounded bg-accent px-5 py-3 font-black text-white transition hover:bg-accent-strong"
+              >
+                Sincronizar {team.name}
+              </button>
+            </form>
+          ))}
+        </div>
+        {syncableTeams.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            Todavia no hay equipos activos con ID API deportiva.
+          </p>
+        ) : null}
       </section>
 
       <section className="mt-8">

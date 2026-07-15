@@ -18,11 +18,15 @@ type TeamRecord = {
   external_api_id: string | null
 }
 
-function adminFixturesPath(message: { synced?: number; error?: string }): Route {
+function adminFixturesPath(message: { synced?: number; team?: string; error?: string }): Route {
   const params = new URLSearchParams()
 
   if (typeof message.synced === 'number') {
     params.set('synced', String(message.synced))
+  }
+
+  if (message.team) {
+    params.set('team', message.team)
   }
 
   if (message.error) {
@@ -144,7 +148,7 @@ async function findOrCreateTeam(input: {
   return createdTeam as TeamRecord
 }
 
-export async function syncMacaraFixturesAction() {
+export async function syncTeamFixturesAction(formData: FormData) {
   const profile = await requireRole(['ADMIN'])
 
   if (!profile) {
@@ -152,30 +156,36 @@ export async function syncMacaraFixturesAction() {
   }
 
   const supabase = await createSupabaseServerClient()
-  const { data: macara, error: macaraError } = await supabase
-    .from('teams')
-    .select('id, name, slug, external_api_id')
-    .eq('slug', 'macara')
-    .single()
+  const teamSlug = String(formData.get('teamSlug') ?? '').trim()
 
-  if (macaraError || !macara) {
-    redirect(adminFixturesPath({ error: macaraError?.message ?? 'Macara no esta registrado.' }))
+  if (!teamSlug) {
+    redirect(adminFixturesPath({ error: 'Selecciona un equipo para sincronizar.' }))
   }
 
-  if (!macara.external_api_id || !/^\d+$/.test(macara.external_api_id)) {
-    redirect(adminFixturesPath({ error: 'Macara no tiene ID API deportiva valido.' }))
+  const { data: team, error: teamError } = await supabase
+    .from('teams')
+    .select('id, name, slug, external_api_id')
+    .eq('slug', teamSlug)
+    .single()
+
+  if (teamError || !team) {
+    redirect(adminFixturesPath({ error: teamError?.message ?? 'El equipo no esta registrado.' }))
+  }
+
+  if (!team.external_api_id || !/^\d+$/.test(team.external_api_id)) {
+    redirect(adminFixturesPath({ error: `${team.name} no tiene ID API deportiva valido.` }))
   }
 
   const [nextEvents, previousEvents] = await Promise.all([
-    getNextExternalTeamEvents(macara.external_api_id),
-    getPreviousExternalTeamEvents(macara.external_api_id),
+    getNextExternalTeamEvents(team.external_api_id),
+    getPreviousExternalTeamEvents(team.external_api_id),
   ])
   const events = Array.from(
     new Map([...previousEvents, ...nextEvents].map((event) => [event.id, event])).values(),
   )
 
   if (events.length === 0) {
-    redirect(adminFixturesPath({ error: 'La API no devolvio partidos de Macara.' }))
+    redirect(adminFixturesPath({ error: `La API no devolvio partidos de ${team.name}.` }))
   }
 
   let synced = 0
@@ -244,5 +254,11 @@ export async function syncMacaraFixturesAction() {
   revalidatePath('/admin/partidos')
   revalidatePath('/equipos')
   revalidatePath('/equipos/[slug]', 'page')
-  redirect(adminFixturesPath({ synced }))
+  redirect(adminFixturesPath({ synced, team: team.name }))
+}
+
+export async function syncMacaraFixturesAction() {
+  const formData = new FormData()
+  formData.set('teamSlug', 'macara')
+  return syncTeamFixturesAction(formData)
 }
