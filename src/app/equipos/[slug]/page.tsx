@@ -124,6 +124,14 @@ function formatFixtureScore(
   return `${fixture.home_score} - ${fixture.away_score}`
 }
 
+function formatExternalScore(event: NonNullable<Awaited<ReturnType<typeof getNextExternalTeamEvents>>[number]>) {
+  if (event.homeScore === null || event.awayScore === null) {
+    return 'vs.'
+  }
+
+  return `${event.homeScore} - ${event.awayScore}`
+}
+
 export default async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params
   const team = await getTeamBySlug(slug)
@@ -148,6 +156,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
     null
   const dataFixture = liveFixture ?? nextFixture ?? recentFixture
   const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
+  const dataExternalEvent = nextExternalEvent ?? null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
@@ -261,42 +270,55 @@ export default async function TeamPage({ params }: TeamPageProps) {
           )}
         </article>
 
-        {dataFixture ? (
+        {dataExternalEvent || dataFixture ? (
           <article className="rounded border border-border bg-panel p-5">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
               Datos TheSportsDB
             </p>
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-                {dataFixture.live_data?.league ?? 'Partido'}{' '}
-                {dataFixture.live_data?.round ? `- Jornada ${dataFixture.live_data.round}` : ''}
+                {dataExternalEvent?.league ?? dataFixture?.live_data?.league ?? 'Partido'}{' '}
+                {dataExternalEvent?.round
+                  ? `- Jornada ${dataExternalEvent.round}`
+                  : dataFixture?.live_data?.round
+                    ? `- Jornada ${dataFixture.live_data.round}`
+                    : ''}
               </p>
               <h2 className="mt-3 text-xl font-black">
-                {dataFixture.home_team?.name} {formatFixtureScore(dataFixture)}{' '}
-                {dataFixture.away_team?.name}
+                {dataExternalEvent
+                  ? `${dataExternalEvent.homeTeam} ${formatExternalScore(dataExternalEvent)} ${
+                      dataExternalEvent.awayTeam
+                    }`
+                  : `${dataFixture?.home_team?.name} ${dataFixture ? formatFixtureScore(dataFixture) : 'vs.'} ${
+                      dataFixture?.away_team?.name
+                    }`}
               </h2>
-              <p className="mt-2 text-sm text-muted">{formatMatchDate(dataFixture.match_date)}</p>
-              {dataFixture.venue ? (
-                <p className="mt-1 text-sm text-muted">{dataFixture.venue}</p>
+              <p className="mt-2 text-sm text-muted">
+                {formatMatchDate(dataExternalEvent?.startsAt ?? dataFixture?.match_date ?? null)}
+              </p>
+              {dataExternalEvent?.venue ?? dataFixture?.venue ? (
+                <p className="mt-1 text-sm text-muted">
+                  {dataExternalEvent?.venue ?? dataFixture?.venue}
+                </p>
               ) : null}
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-muted">
                 <span className="rounded border border-border px-3 py-2">
-                  Alineaciones {countItems(dataFixture.live_data?.lineup)}
+                  Alineaciones {countItems(dataFixture?.live_data?.lineup)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
-                  Eventos {countItems(dataFixture.live_data?.timeline)}
+                  Eventos {countItems(dataFixture?.live_data?.timeline)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
-                  Stats {countItems(dataFixture.live_data?.stats)}
+                  Stats {countItems(dataFixture?.live_data?.stats)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
-                  TV {countItems(dataFixture.live_data?.tv)}
+                  TV {countItems(dataFixture?.live_data?.tv)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
-                  Highlights {countItems(dataFixture.live_data?.highlights)}
+                  Highlights {countItems(dataFixture?.live_data?.highlights)}
                 </span>
                 <span className="rounded border border-border px-3 py-2">
-                  Resultado {countItems(dataFixture.live_data?.results)}
+                  Resultado {countItems(dataFixture?.live_data?.results)}
                 </span>
               </div>
               {!syncedFixture ? (
