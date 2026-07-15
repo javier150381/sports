@@ -5,11 +5,18 @@ const sportsDbEventSchema = z.object({
   strEvent: z.string().nullable(),
   strHomeTeam: z.string().nullable(),
   strAwayTeam: z.string().nullable(),
+  strHomeTeamBadge: z.string().nullable(),
+  strAwayTeamBadge: z.string().nullable(),
   strTimestamp: z.string().nullable(),
   dateEvent: z.string().nullable(),
+  dateEventLocal: z.string().nullable(),
   strTime: z.string().nullable(),
+  strTimeLocal: z.string().nullable(),
   strVenue: z.string().nullable(),
   strLeague: z.string().nullable(),
+  strSeason: z.string().nullable(),
+  intRound: z.string().nullable(),
+  strGroup: z.string().nullable(),
   intHomeScore: z.string().nullable(),
   intAwayScore: z.string().nullable(),
   strStatus: z.string().nullable(),
@@ -24,9 +31,16 @@ export type ExternalTeamEvent = {
   title: string
   homeTeam: string | null
   awayTeam: string | null
+  homeBadge: string | null
+  awayBadge: string | null
   startsAt: string | null
+  localDate: string | null
+  localTime: string | null
   venue: string | null
   league: string | null
+  season: string | null
+  round: number | null
+  group: string | null
   homeScore: number | null
   awayScore: number | null
   status: string | null
@@ -38,7 +52,7 @@ function getFootballApiBaseUrl() {
 
 function getEventStart(event: z.infer<typeof sportsDbEventSchema>) {
   if (event.strTimestamp) {
-    return event.strTimestamp
+    return event.strTimestamp.endsWith('Z') ? event.strTimestamp : `${event.strTimestamp}Z`
   }
 
   if (event.dateEvent) {
@@ -88,9 +102,16 @@ export async function getNextExternalTeamEvents(teamExternalId: string | null) {
         title: event.strEvent ?? [event.strHomeTeam, event.strAwayTeam].filter(Boolean).join(' vs '),
         homeTeam: event.strHomeTeam,
         awayTeam: event.strAwayTeam,
+        homeBadge: event.strHomeTeamBadge,
+        awayBadge: event.strAwayTeamBadge,
         startsAt: getEventStart(event),
+        localDate: event.dateEventLocal,
+        localTime: event.strTimeLocal,
         venue: event.strVenue,
         league: event.strLeague,
+        season: event.strSeason,
+        round: parseScore(event.intRound),
+        group: event.strGroup,
         homeScore: parseScore(event.intHomeScore),
         awayScore: parseScore(event.intAwayScore),
         status: event.strStatus,

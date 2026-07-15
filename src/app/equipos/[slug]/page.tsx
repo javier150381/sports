@@ -78,6 +78,21 @@ function getEmbedInfo(url: string | null): EmbedInfo | null {
   return null
 }
 
+function formatMatchDate(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat('es-EC', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Guayaquil',
+  }).format(new Date(value))
+}
+
 export default async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params
   const team = await getTeamBySlug(slug)
@@ -92,6 +107,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
+  const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
 
   return (
     <MobileContainer>
@@ -129,22 +145,59 @@ export default async function TeamPage({ params }: TeamPageProps) {
           </p>
           {nextExternalEvent ? (
             <div className="mt-4">
-              <h2 className="text-xl font-black">{nextExternalEvent.title}</h2>
-              {nextExternalEvent.startsAt ? (
-                <p className="mt-2 text-sm text-muted">
-                  {new Intl.DateTimeFormat('es-EC', {
-                    dateStyle: 'full',
-                    timeStyle: 'short',
-                  }).format(new Date(nextExternalEvent.startsAt))}
-                </p>
-              ) : null}
+              <p className="text-sm text-muted">
+                {[nextExternalEvent.league, externalMatchDate].filter(Boolean).join(' · ')}
+              </p>
+              <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
+                <div className="grid justify-items-center gap-3">
+                  <div className="grid size-16 place-items-center overflow-hidden rounded border border-border bg-background">
+                    {nextExternalEvent.homeBadge ? (
+                      <Image
+                        src={nextExternalEvent.homeBadge}
+                        alt={nextExternalEvent.homeTeam ?? 'Equipo local'}
+                        width={56}
+                        height={56}
+                        className="size-14 object-contain"
+                      />
+                    ) : (
+                      <span className="text-lg font-black">
+                        {nextExternalEvent.homeTeam?.slice(0, 3).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base font-black">{nextExternalEvent.homeTeam}</h2>
+                </div>
+                <span className="text-sm font-black text-muted">vs.</span>
+                <div className="grid justify-items-center gap-3">
+                  <div className="grid size-16 place-items-center overflow-hidden rounded border border-border bg-background">
+                    {nextExternalEvent.awayBadge ? (
+                      <Image
+                        src={nextExternalEvent.awayBadge}
+                        alt={nextExternalEvent.awayTeam ?? 'Equipo visitante'}
+                        width={56}
+                        height={56}
+                        className="size-14 object-contain"
+                      />
+                    ) : (
+                      <span className="text-lg font-black">
+                        {nextExternalEvent.awayTeam?.slice(0, 3).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base font-black">{nextExternalEvent.awayTeam}</h2>
+                </div>
+              </div>
+              <p className="mt-5 text-center text-sm text-muted">
+                {[
+                  nextExternalEvent.group ? `Fase ${nextExternalEvent.group}` : null,
+                  nextExternalEvent.round ? `Jornada ${nextExternalEvent.round}` : null,
+                  nextExternalEvent.season,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
               {nextExternalEvent.venue ? (
-                <p className="mt-2 text-sm text-muted">{nextExternalEvent.venue}</p>
-              ) : null}
-              {nextExternalEvent.league ? (
-                <p className="mt-3 rounded bg-accent/15 px-3 py-2 text-xs font-bold text-accent-strong">
-                  {nextExternalEvent.league} - TheSportsDB
-                </p>
+                <p className="mt-2 text-center text-xs text-muted">{nextExternalEvent.venue}</p>
               ) : null}
             </div>
           ) : nextFixture ? (
