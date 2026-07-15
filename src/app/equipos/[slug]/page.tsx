@@ -146,7 +146,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
       .filter((fixture) => new Date(fixture.match_date) <= now)
       .sort((first, second) => Date.parse(second.match_date) - Date.parse(first.match_date))[0] ??
     null
-  const dataFixture = liveFixture ?? recentFixture ?? nextFixture
+  const dataFixture = liveFixture ?? nextFixture ?? recentFixture
   const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
