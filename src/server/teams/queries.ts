@@ -9,6 +9,7 @@ export type TeamListItem = {
   logo_url: string | null
   primary_color: string | null
   secondary_color: string | null
+  external_api_id: string | null
 }
 
 export type TeamDetail = TeamListItem & {
@@ -57,7 +58,9 @@ export async function getActiveTeams(): Promise<TeamListItem[]> {
   const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase
     .from('teams')
-    .select('id, name, slug, short_name, description, logo_url, primary_color, secondary_color')
+    .select(
+      'id, name, slug, short_name, description, logo_url, primary_color, secondary_color, external_api_id',
+    )
     .eq('active', true)
     .order('name')
 
@@ -72,7 +75,9 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
   const supabase = await createSupabaseServerClient()
   const { data: team, error: teamError } = await supabase
     .from('teams')
-    .select('id, name, slug, short_name, description, logo_url, primary_color, secondary_color')
+    .select(
+      'id, name, slug, short_name, description, logo_url, primary_color, secondary_color, external_api_id',
+    )
     .eq('slug', slug)
     .eq('active', true)
     .single()

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
 import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { MemeCarousel } from '@/features/content/meme-carousel'
+import { getNextExternalTeamEvents } from '@/server/football/thesportsdb-provider'
 import { getTeamBySlug } from '@/server/teams/queries'
 
 type TeamPageProps = {
@@ -85,6 +86,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
     notFound()
   }
 
+  const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
+  const nextExternalEvent = externalEvents[0] ?? null
   const nextFixture = team.fixtures.find((fixture) => new Date(fixture.match_date) > new Date())
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
   const memes = team.content.filter((post) => post.content_type === 'MEME')
@@ -124,7 +127,27 @@ export default async function TeamPage({ params }: TeamPageProps) {
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
             Proximo partido
           </p>
-          {nextFixture ? (
+          {nextExternalEvent ? (
+            <div className="mt-4">
+              <h2 className="text-xl font-black">{nextExternalEvent.title}</h2>
+              {nextExternalEvent.startsAt ? (
+                <p className="mt-2 text-sm text-muted">
+                  {new Intl.DateTimeFormat('es-EC', {
+                    dateStyle: 'full',
+                    timeStyle: 'short',
+                  }).format(new Date(nextExternalEvent.startsAt))}
+                </p>
+              ) : null}
+              {nextExternalEvent.venue ? (
+                <p className="mt-2 text-sm text-muted">{nextExternalEvent.venue}</p>
+              ) : null}
+              {nextExternalEvent.league ? (
+                <p className="mt-3 rounded bg-accent/15 px-3 py-2 text-xs font-bold text-accent-strong">
+                  {nextExternalEvent.league} - TheSportsDB
+                </p>
+              ) : null}
+            </div>
+          ) : nextFixture ? (
             <div className="mt-4">
               <h2 className="text-xl font-black">
                 {nextFixture.home_team?.name} vs {nextFixture.away_team?.name}
@@ -138,7 +161,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
               <p className="mt-2 text-sm text-muted">{nextFixture.venue}</p>
             </div>
           ) : (
-            <p className="mt-4 text-muted">No hay proximos partidos demo para este equipo.</p>
+            <p className="mt-4 text-muted">No hay proximos partidos para este equipo.</p>
           )}
         </article>
 
