@@ -41,6 +41,13 @@ Ver [.env.example](.env.example). Las claves privadas como `SUPABASE_SERVICE_ROL
 3. Configura las variables de entorno.
 4. Crea buckets de Storage para imagenes cuando se implemente la gestion de contenidos.
 
+## Automatizacion Deportiva
+
+- En `/admin/partidos`, el boton **Sincronizar todos los equipos** usa TheSportsDB para traer proximos partidos, ultimos resultados, detalles, highlights y rivales.
+- La sincronizacion crea contenido automatico de previa y highlights post-partido cuando la API entrega videos.
+- Los pronosticos de marcador se cargan en `/partidos/[id]`; al sincronizar un partido terminado se asignan puntos automaticamente.
+- Las paginas de equipos muestran tabla de posiciones, plantilla y camisetas historicas si TheSportsDB tiene esos datos.
+
 ## Scripts
 
 ```bash
@@ -54,4 +61,3 @@ npm run build
 ## Estado
 
 Fase 1 en construccion: configuracion base, diseno inicial, Supabase, autenticacion, migraciones y RLS.
-

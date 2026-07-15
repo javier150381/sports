@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { MobileContainer } from '@/components/mobile-container'
 import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { MemeCarousel } from '@/features/content/meme-carousel'
 import {
   getExternalLeagueTable,
+  getExternalTeamEquipment,
+  getExternalTeamPlayers,
   getNextExternalTeamEvents,
 } from '@/server/football/thesportsdb-provider'
 import { getTeamBySlug } from '@/server/teams/queries'
@@ -168,6 +171,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
     nextExternalEvent?.leagueExternalId ?? null,
     nextExternalEvent?.season ?? null,
   )
+  const [players, equipment] = await Promise.all([
+    getExternalTeamPlayers(team.external_api_id),
+    getExternalTeamEquipment(team.external_api_id),
+  ])
   const now = new Date()
   const nextFixture =
     team.fixtures
@@ -404,6 +411,79 @@ export default async function TeamPage({ params }: TeamPageProps) {
                   API tenga esos datos.
                 </p>
               ) : null}
+              {dataFixture ? (
+                <Link
+                  href={`/partidos/${dataFixture.id}`}
+                  className="mt-4 inline-flex rounded bg-accent px-4 py-2 text-sm font-black text-white transition hover:bg-accent-strong"
+                >
+                  Pronosticar marcador
+                </Link>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
+
+        {players.length > 0 ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              Plantilla automatica
+            </p>
+            <div className="mt-4 grid gap-3">
+              {players.slice(0, 12).map((player) => (
+                <div
+                  key={player.id ?? player.name}
+                  className="flex items-center gap-3 rounded border border-border bg-background/40 p-3"
+                >
+                  <div className="relative size-12 shrink-0 overflow-hidden rounded bg-background">
+                    {player.image ? (
+                      <Image
+                        src={player.image}
+                        alt={player.name ?? 'Jugador'}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span className="grid h-full place-items-center text-xs font-black">
+                        {(player.name ?? 'J').slice(0, 1)}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-black">{player.name}</h3>
+                    <p className="text-xs text-muted">
+                      {[player.position, player.nationality].filter(Boolean).join(' - ')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        ) : null}
+
+        {equipment.length > 0 ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              Camisetas historicas
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {equipment.slice(0, 8).map((kit) => (
+                <div key={kit.id ?? `${kit.season}-${kit.type}`} className="rounded border border-border p-3">
+                  {kit.image ? (
+                    <div className="relative aspect-square overflow-hidden rounded bg-background">
+                      <Image
+                        src={kit.image}
+                        alt={`${kit.type ?? 'Camiseta'} ${kit.season ?? ''}`}
+                        fill
+                        sizes="160px"
+                        className="object-contain p-2"
+                      />
+                    </div>
+                  ) : null}
+                  <h3 className="mt-3 text-sm font-black">{kit.type ?? 'Equipamiento'}</h3>
+                  <p className="text-xs text-muted">{kit.season}</p>
+                </div>
+              ))}
             </div>
           </article>
         ) : null}

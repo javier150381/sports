@@ -77,6 +77,14 @@ const leagueTableResponseSchema = z.object({
   table: z.array(leagueTableRowSchema).nullable().optional(),
 })
 
+const teamPlayersResponseSchema = z.object({
+  player: z.array(unknownRecordSchema).nullable().optional(),
+})
+
+const teamEquipmentResponseSchema = z.object({
+  equipment: z.array(unknownRecordSchema).nullable().optional(),
+})
+
 export type ExternalTeamEvent = {
   id: string
   leagueExternalId: string | null
@@ -119,6 +127,21 @@ export type ExternalLeagueTableRow = {
   lost: number | null
   goalDifference: number | null
   points: number | null
+}
+
+export type ExternalTeamPlayer = {
+  id: string | null
+  name: string | null
+  position: string | null
+  nationality: string | null
+  image: string | null
+}
+
+export type ExternalTeamEquipment = {
+  id: string | null
+  season: string | null
+  type: string | null
+  image: string | null
 }
 
 function getFootballApiBaseUrl() {
@@ -286,6 +309,61 @@ export async function getExternalLeagueTable(
     lost: parseNumber(row.intLoss),
     goalDifference: parseNumber(row.intGoalDifference),
     points: parseNumber(row.intPoints),
+  }))
+}
+
+function getRecordString(record: Record<string, unknown>, key: string) {
+  const value = record[key]
+  return typeof value === 'string' && value.trim().length > 0 ? value : null
+}
+
+export async function getExternalTeamPlayers(
+  teamExternalId: string | null,
+): Promise<ExternalTeamPlayer[]> {
+  if (!teamExternalId || !/^\d+$/.test(teamExternalId)) {
+    return []
+  }
+
+  const parsed = teamPlayersResponseSchema.safeParse(
+    await fetchSportsDbJson('lookup_all_players.php', { id: teamExternalId }),
+  )
+
+  if (!parsed.success) {
+    return []
+  }
+
+  return (parsed.data.player ?? []).map((player) => ({
+    id: getRecordString(player, 'idPlayer'),
+    name: getRecordString(player, 'strPlayer'),
+    position: getRecordString(player, 'strPosition'),
+    nationality: getRecordString(player, 'strNationality'),
+    image:
+      getRecordString(player, 'strCutout') ??
+      getRecordString(player, 'strThumb') ??
+      getRecordString(player, 'strRender'),
+  }))
+}
+
+export async function getExternalTeamEquipment(
+  teamExternalId: string | null,
+): Promise<ExternalTeamEquipment[]> {
+  if (!teamExternalId || !/^\d+$/.test(teamExternalId)) {
+    return []
+  }
+
+  const parsed = teamEquipmentResponseSchema.safeParse(
+    await fetchSportsDbJson('lookupequipment.php', { id: teamExternalId }),
+  )
+
+  if (!parsed.success) {
+    return []
+  }
+
+  return (parsed.data.equipment ?? []).map((equipment) => ({
+    id: getRecordString(equipment, 'idEquipment'),
+    season: getRecordString(equipment, 'strSeason'),
+    type: getRecordString(equipment, 'strType'),
+    image: getRecordString(equipment, 'strEquipment'),
   }))
 }
 

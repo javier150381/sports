@@ -54,10 +54,19 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
         <h2 className="mt-2 text-2xl font-black">Sincronizar equipos</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Trae proximos partidos, ultimo resultado, alineaciones, eventos, estadisticas, TV y
-          highlights cuando TheSportsDB los tenga. Tambien crea rivales si no existen y actualiza
-          el calendario sin duplicar eventos.
+          highlights cuando TheSportsDB los tenga. Tambien crea previas, highlights post-partido,
+          cierra pronosticos con puntos y crea rivales si no existen.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
+          <form action={syncTeamFixturesAction}>
+            <input type="hidden" name="teamSlug" value="__all" />
+            <button
+              type="submit"
+              className="rounded bg-white px-5 py-3 font-black text-background transition hover:bg-accent hover:text-white"
+            >
+              Sincronizar todos los equipos
+            </button>
+          </form>
           {syncableTeams.map((team) => (
             <form key={team.id} action={syncTeamFixturesAction}>
               <input type="hidden" name="teamSlug" value={team.slug} />

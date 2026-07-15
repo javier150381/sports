@@ -9,6 +9,7 @@ import {
   getNextExternalTeamEvents,
   getPreviousExternalTeamEvents,
 } from '@/server/football/thesportsdb-provider'
+import { getSupabaseAdminClient } from '@/server/supabase/admin'
 import { createSupabaseServerClient } from '@/server/supabase/server'
 
 type TeamRecord = {
@@ -16,6 +17,13 @@ type TeamRecord = {
   name: string
   slug: string
   external_api_id: string | null
+}
+
+type SyncedFixture = {
+  id: string
+  home_score: number | null
+  away_score: number | null
+  status: string
 }
 
 function adminFixturesPath(message: { synced?: number; team?: string; error?: string }): Route {
@@ -148,32 +156,111 @@ async function findOrCreateTeam(input: {
   return createdTeam as TeamRecord
 }
 
-export async function syncTeamFixturesAction(formData: FormData) {
-  const profile = await requireRole(['ADMIN'])
-
-  if (!profile) {
-    redirect('/login')
-  }
-
+async function ensureAutomatedContent(input: {
+  fixtureId: string
+  teamId: string
+  teamName: string
+  title: string
+  description: string
+  contentType: 'ANNOUNCEMENT' | 'HIGHLIGHT'
+  externalUrl?: string | null
+  imageUrl?: string | null
+  createdBy: string
+}) {
   const supabase = await createSupabaseServerClient()
-  const teamSlug = String(formData.get('teamSlug') ?? '').trim()
+  const { data: existing, error: existingError } = await supabase
+    .from('content_posts')
+    .select('id')
+    .eq('fixture_id', input.fixtureId)
+    .eq('content_type', input.contentType)
+    .maybeSingle()
 
-  if (!teamSlug) {
-    redirect(adminFixturesPath({ error: 'Selecciona un equipo para sincronizar.' }))
+  if (existingError || existing) {
+    return
   }
 
-  const { data: team, error: teamError } = await supabase
-    .from('teams')
-    .select('id, name, slug, external_api_id')
-    .eq('slug', teamSlug)
-    .single()
+  await supabase.from('content_posts').insert({
+    title: input.title,
+    description: input.description,
+    content_type: input.contentType,
+    external_url: input.externalUrl,
+    image_url: input.imageUrl,
+    alt_text: input.title,
+    team_id: input.teamId,
+    fixture_id: input.fixtureId,
+    status: 'PUBLISHED',
+    is_featured: true,
+    display_order: input.contentType === 'ANNOUNCEMENT' ? -10 : -5,
+    published_at: new Date().toISOString(),
+    created_by: input.createdBy,
+  })
+}
 
-  if (teamError || !team) {
-    redirect(adminFixturesPath({ error: teamError?.message ?? 'El equipo no esta registrado.' }))
+async function awardPredictionPoints(fixture: SyncedFixture) {
+  if (
+    fixture.status !== 'POST_MATCH' ||
+    fixture.home_score === null ||
+    fixture.away_score === null
+  ) {
+    return
   }
+
+  const admin = getSupabaseAdminClient()
+  const { data: predictions, error } = await admin
+    .from('predictions')
+    .select('id, user_id, home_score, away_score, points_awarded')
+    .eq('fixture_id', fixture.id)
+    .eq('points_awarded', 0)
+
+  if (error || !predictions) {
+    return
+  }
+
+  for (const prediction of predictions) {
+    let points = 0
+
+    if (
+      prediction.home_score === fixture.home_score &&
+      prediction.away_score === fixture.away_score
+    ) {
+      points = 10
+    } else {
+      const predictedDiff = prediction.home_score - prediction.away_score
+      const realDiff = fixture.home_score - fixture.away_score
+
+      if (Math.sign(predictedDiff) === Math.sign(realDiff)) {
+        points = 3
+      }
+    }
+
+    if (points === 0) {
+      continue
+    }
+
+    await admin.from('predictions').update({ points_awarded: points }).eq('id', prediction.id)
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('points')
+      .eq('id', prediction.user_id)
+      .single()
+
+    await admin
+      .from('profiles')
+      .update({ points: (profile?.points ?? 0) + points })
+      .eq('id', prediction.user_id)
+  }
+}
+
+function getHighlightUrl(highlight: Record<string, unknown>) {
+  const value = highlight.strVideo ?? highlight.strYoutube ?? highlight.strUrl
+  return typeof value === 'string' ? value : null
+}
+
+async function syncFixturesForTeam(team: TeamRecord, createdBy: string) {
+  const supabase = await createSupabaseServerClient()
 
   if (!team.external_api_id || !/^\d+$/.test(team.external_api_id)) {
-    redirect(adminFixturesPath({ error: `${team.name} no tiene ID API deportiva valido.` }))
+    throw new Error(`${team.name} no tiene ID API deportiva valido.`)
   }
 
   const [nextEvents, previousEvents] = await Promise.all([
@@ -185,7 +272,7 @@ export async function syncTeamFixturesAction(formData: FormData) {
   )
 
   if (events.length === 0) {
-    redirect(adminFixturesPath({ error: `La API no devolvio partidos de ${team.name}.` }))
+    throw new Error(`La API no devolvio partidos de ${team.name}.`)
   }
 
   let synced = 0
@@ -209,52 +296,150 @@ export async function syncTeamFixturesAction(formData: FormData) {
     ])
 
     const bundle = await getExternalEventBundle(event)
+    const fixtureStatus = mapFixtureStatus(event.status)
 
-    const { error } = await supabase.from('fixtures').upsert(
-      {
-        external_fixture_id: `thesportsdb-${event.id}`,
-        home_team_id: homeTeam.id,
-        away_team_id: awayTeam.id,
-        match_date: event.startsAt,
-        venue: event.venue,
-        status: mapFixtureStatus(event.status),
-        home_score: event.homeScore,
-        away_score: event.awayScore,
-        live_data: {
-          provider: 'thesportsdb',
-          eventId: event.id,
-          leagueExternalId: event.leagueExternalId,
-          league: event.league,
-          season: event.season,
-          round: event.round,
-          group: event.group,
-          homeBadge: event.homeBadge,
-          awayBadge: event.awayBadge,
-          details: bundle.details,
-          results: bundle.results,
-          lineup: bundle.lineup,
-          timeline: bundle.timeline,
-          stats: bundle.stats,
-          tv: bundle.tv,
-          highlights: bundle.highlights,
-          enrichedAt: new Date().toISOString(),
+    const { data: syncedFixture, error } = await supabase
+      .from('fixtures')
+      .upsert(
+        {
+          external_fixture_id: `thesportsdb-${event.id}`,
+          home_team_id: homeTeam.id,
+          away_team_id: awayTeam.id,
+          match_date: event.startsAt,
+          venue: event.venue,
+          status: fixtureStatus,
+          home_score: event.homeScore,
+          away_score: event.awayScore,
+          live_data: {
+            provider: 'thesportsdb',
+            eventId: event.id,
+            leagueExternalId: event.leagueExternalId,
+            league: event.league,
+            season: event.season,
+            round: event.round,
+            group: event.group,
+            homeBadge: event.homeBadge,
+            awayBadge: event.awayBadge,
+            details: bundle.details,
+            results: bundle.results,
+            lineup: bundle.lineup,
+            timeline: bundle.timeline,
+            stats: bundle.stats,
+            tv: bundle.tv,
+            highlights: bundle.highlights,
+            enrichedAt: new Date().toISOString(),
+          },
+          last_synced_at: new Date().toISOString(),
         },
-        last_synced_at: new Date().toISOString(),
-      },
-      { onConflict: 'external_fixture_id' },
-    )
+        { onConflict: 'external_fixture_id' },
+      )
+      .select('id, home_score, away_score, status')
+      .single()
 
     if (error) {
-      redirect(adminFixturesPath({ error: error.message }))
+      throw new Error(error.message)
+    }
+
+    if (syncedFixture) {
+      await ensureAutomatedContent({
+        fixtureId: syncedFixture.id,
+        teamId: team.id,
+        teamName: team.name,
+        title: `Previa: ${event.title}`,
+        description: `${event.title} - ${event.league ?? 'Partido'}${
+          event.round ? `, jornada ${event.round}` : ''
+        }. Hora Ecuador: ${new Intl.DateTimeFormat('es-EC', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'America/Guayaquil',
+        }).format(new Date(event.startsAt))}.`,
+        contentType: 'ANNOUNCEMENT',
+        imageUrl: event.homeBadge ?? event.awayBadge,
+        createdBy,
+      })
+
+      const firstHighlight = bundle.highlights[0]
+      const highlightUrl = firstHighlight ? getHighlightUrl(firstHighlight) : null
+
+      if (highlightUrl) {
+        await ensureAutomatedContent({
+          fixtureId: syncedFixture.id,
+          teamId: team.id,
+          teamName: team.name,
+          title: `Highlights: ${event.title}`,
+          description: `Resumen automatico post-partido de ${event.title}.`,
+          contentType: 'HIGHLIGHT',
+          externalUrl: highlightUrl,
+          imageUrl: event.homeBadge ?? event.awayBadge,
+          createdBy,
+        })
+      }
+
+      await awardPredictionPoints(syncedFixture as SyncedFixture)
     }
 
     synced += 1
   }
 
+  return synced
+}
+
+export async function syncTeamFixturesAction(formData: FormData) {
+  const profile = await requireRole(['ADMIN'])
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const teamSlug = String(formData.get('teamSlug') ?? '').trim()
+
+  if (!teamSlug) {
+    redirect(adminFixturesPath({ error: 'Selecciona un equipo para sincronizar.' }))
+  }
+
+  let synced = 0
+  let teamName = ''
+
+  try {
+    if (teamSlug === '__all') {
+      const { data: teams, error } = await supabase
+        .from('teams')
+        .select('id, name, slug, external_api_id')
+        .eq('active', true)
+        .not('external_api_id', 'is', null)
+
+      if (error || !teams) {
+        throw new Error(error?.message ?? 'No se pudieron cargar los equipos.')
+      }
+
+      teamName = 'todos los equipos'
+
+      for (const team of teams as TeamRecord[]) {
+        synced += await syncFixturesForTeam(team, profile.id)
+      }
+    } else {
+      const { data: team, error: teamError } = await supabase
+        .from('teams')
+        .select('id, name, slug, external_api_id')
+        .eq('slug', teamSlug)
+        .single()
+
+      if (teamError || !team) {
+        throw new Error(teamError?.message ?? 'El equipo no esta registrado.')
+      }
+
+      synced = await syncFixturesForTeam(team as TeamRecord, profile.id)
+      teamName = team.name
+    }
+  } catch (error) {
+    redirect(adminFixturesPath({ error: error instanceof Error ? error.message : 'Error desconocido.' }))
+  }
+
   revalidatePath('/admin/partidos')
   revalidatePath('/equipos')
   revalidatePath('/equipos/[slug]', 'page')
-  redirect(adminFixturesPath({ synced, team: team.name }))
+  redirect(adminFixturesPath({ synced, team: teamName }))
 }
 
 export async function syncMacaraFixturesAction() {
