@@ -4,7 +4,11 @@ import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireRole } from '@/server/auth/authorization'
-import { getNextExternalTeamEvents } from '@/server/football/thesportsdb-provider'
+import {
+  getExternalEventBundle,
+  getNextExternalTeamEvents,
+  getPreviousExternalTeamEvents,
+} from '@/server/football/thesportsdb-provider'
 import { createSupabaseServerClient } from '@/server/supabase/server'
 
 type TeamRecord = {
@@ -162,10 +166,16 @@ export async function syncMacaraFixturesAction() {
     redirect(adminFixturesPath({ error: 'Macara no tiene ID API deportiva valido.' }))
   }
 
-  const events = await getNextExternalTeamEvents(macara.external_api_id)
+  const [nextEvents, previousEvents] = await Promise.all([
+    getNextExternalTeamEvents(macara.external_api_id),
+    getPreviousExternalTeamEvents(macara.external_api_id),
+  ])
+  const events = Array.from(
+    new Map([...previousEvents, ...nextEvents].map((event) => [event.id, event])).values(),
+  )
 
   if (events.length === 0) {
-    redirect(adminFixturesPath({ error: 'La API no devolvio proximos partidos de Macara.' }))
+    redirect(adminFixturesPath({ error: 'La API no devolvio partidos de Macara.' }))
   }
 
   let synced = 0
@@ -188,6 +198,8 @@ export async function syncMacaraFixturesAction() {
       }),
     ])
 
+    const bundle = await getExternalEventBundle(event)
+
     const { error } = await supabase.from('fixtures').upsert(
       {
         external_fixture_id: `thesportsdb-${event.id}`,
@@ -201,12 +213,21 @@ export async function syncMacaraFixturesAction() {
         live_data: {
           provider: 'thesportsdb',
           eventId: event.id,
+          leagueExternalId: event.leagueExternalId,
           league: event.league,
           season: event.season,
           round: event.round,
           group: event.group,
           homeBadge: event.homeBadge,
           awayBadge: event.awayBadge,
+          details: bundle.details,
+          results: bundle.results,
+          lineup: bundle.lineup,
+          timeline: bundle.timeline,
+          stats: bundle.stats,
+          tv: bundle.tv,
+          highlights: bundle.highlights,
+          enrichedAt: new Date().toISOString(),
         },
         last_synced_at: new Date().toISOString(),
       },

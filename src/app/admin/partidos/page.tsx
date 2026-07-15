@@ -18,6 +18,10 @@ function formatFixtureDate(value: string) {
   }).format(new Date(value))
 }
 
+function countItems(items?: unknown[]) {
+  return Array.isArray(items) ? items.length : 0
+}
+
 export default async function AdminFixturesPage({ searchParams }: AdminFixturesPageProps) {
   const params = await searchParams
   const fixtures = await getAdminFixtures()
@@ -26,7 +30,8 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
     <div>
       <h1 className="text-3xl font-black">Partidos</h1>
       <p className="mt-3 text-muted">
-        Sincroniza partidos desde TheSportsDB y prepara pronosticos de marcador.
+        Sincroniza partidos desde TheSportsDB y prepara pronosticos de marcador con datos
+        automaticos.
       </p>
 
       {params?.synced ? (
@@ -47,8 +52,9 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
         </p>
         <h2 className="mt-2 text-2xl font-black">Sincronizar Macara</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Trae los proximos partidos de Macara, crea rivales si no existen y actualiza el
-          calendario sin duplicar eventos.
+          Trae proximos partidos, ultimo resultado, alineaciones, eventos, estadisticas, TV y
+          highlights cuando TheSportsDB los tenga. Tambien crea rivales si no existen y actualiza
+          el calendario sin duplicar eventos.
         </p>
         <form action={syncMacaraFixturesAction}>
           <button type="submit" className="mt-5 rounded bg-accent px-5 py-3 font-black text-white">
@@ -74,6 +80,26 @@ export default async function AdminFixturesPage({ searchParams }: AdminFixturesP
                 API: {fixture.external_fixture_id}
                 {fixture.live_data?.round ? ` - Jornada ${fixture.live_data.round}` : ''}
               </p>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-muted">
+                <span className="rounded border border-border px-3 py-1">
+                  Resultado: {countItems(fixture.live_data?.results)}
+                </span>
+                <span className="rounded border border-border px-3 py-1">
+                  Alineaciones: {countItems(fixture.live_data?.lineup)}
+                </span>
+                <span className="rounded border border-border px-3 py-1">
+                  Eventos: {countItems(fixture.live_data?.timeline)}
+                </span>
+                <span className="rounded border border-border px-3 py-1">
+                  Stats: {countItems(fixture.live_data?.stats)}
+                </span>
+                <span className="rounded border border-border px-3 py-1">
+                  TV: {countItems(fixture.live_data?.tv)}
+                </span>
+                <span className="rounded border border-border px-3 py-1">
+                  Highlights: {countItems(fixture.live_data?.highlights)}
+                </span>
+              </div>
             </article>
           ))}
 

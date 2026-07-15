@@ -14,6 +14,13 @@ export type AdminFixture = {
     round?: number
     homeBadge?: string
     awayBadge?: string
+    results?: Record<string, unknown>[]
+    lineup?: Record<string, unknown>[]
+    timeline?: Record<string, unknown>[]
+    stats?: Record<string, unknown>[]
+    tv?: Record<string, unknown>[]
+    highlights?: Record<string, unknown>[]
+    enrichedAt?: string
   }
   home_team: { name: string; slug: string } | null
   away_team: { name: string; slug: string } | null
