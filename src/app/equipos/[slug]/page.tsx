@@ -9,7 +9,6 @@ import {
   getExternalLeagueTable,
   getExternalEventBundle,
   getExternalTeamEquipment,
-  getExternalTeamPlayers,
   getNextExternalTeamEvents,
 } from '@/server/football/thesportsdb-provider'
 import { getTeamBySlug } from '@/server/teams/queries'
@@ -215,10 +214,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
     nextExternalEvent?.leagueExternalId ?? null,
     nextExternalEvent?.season ?? null,
   )
-  const [players, equipment] = await Promise.all([
-    getExternalTeamPlayers(team.external_api_id),
-    getExternalTeamEquipment(team.external_api_id),
-  ])
+  const equipment = await getExternalTeamEquipment(team.external_api_id)
   const now = new Date()
   const nextFixture =
     team.fixtures
@@ -522,44 +518,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 haya goles, tarjetas o cambios, apareceran aqui al sincronizar.
               </p>
             )}
-          </article>
-        ) : null}
-
-        {players.length > 0 ? (
-          <article className="rounded border border-border bg-panel p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
-              Plantilla automatica
-            </p>
-            <div className="mt-4 grid gap-3">
-              {players.slice(0, 12).map((player) => (
-                <div
-                  key={player.id ?? player.name}
-                  className="flex items-center gap-3 rounded border border-border bg-background/40 p-3"
-                >
-                  <div className="relative size-12 shrink-0 overflow-hidden rounded bg-background">
-                    {player.image ? (
-                      <Image
-                        src={player.image}
-                        alt={player.name ?? 'Jugador'}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <span className="grid h-full place-items-center text-xs font-black">
-                        {(player.name ?? 'J').slice(0, 1)}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-black">{player.name}</h3>
-                    <p className="text-xs text-muted">
-                      {[player.position, player.nationality].filter(Boolean).join(' - ')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </article>
         ) : null}
 
