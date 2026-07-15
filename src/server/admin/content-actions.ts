@@ -2,9 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import type { Route } from 'next'
 import { requireRole } from '@/server/auth/authorization'
 import { createSupabaseServerClient } from '@/server/supabase/server'
 import { contentPostInputSchema } from './content-schemas'
+
+function adminContentPath(message: string): Route {
+  const params = new URLSearchParams({ message })
+  return `/admin/contenidos?${params.toString()}` as Route
+}
 
 function optionalValue(value: string | undefined) {
   return value && value.trim().length > 0 ? value.trim() : null
@@ -59,6 +65,8 @@ export async function createContentPostAction(formData: FormData) {
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
+  revalidatePath('/equipos/[slug]', 'page')
+  redirect(adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'))
 }
 
 export async function updateContentStatusAction(formData: FormData) {
@@ -91,6 +99,8 @@ export async function updateContentStatusAction(formData: FormData) {
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
+  revalidatePath('/equipos/[slug]', 'page')
+  redirect(adminContentPath(parsedStatus.data === 'PUBLISHED' ? 'published' : 'saved'))
 }
 
 export async function moveContentPostAction(formData: FormData) {
@@ -189,7 +199,7 @@ export async function updateContentPostAction(formData: FormData) {
     image_url: formData.get('image_url'),
     alt_text: formData.get('alt_text'),
     team_id: formData.get('team_id'),
-    status: formData.get('status'),
+    status: formData.get('intent') === 'publish' ? 'PUBLISHED' : formData.get('status'),
     is_featured: formData.get('is_featured') === 'on',
     nfc_exclusive: formData.get('nfc_exclusive') === 'on',
     display_order: formData.get('display_order'),
@@ -225,6 +235,8 @@ export async function updateContentPostAction(formData: FormData) {
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
+  revalidatePath('/equipos/[slug]', 'page')
+  redirect(adminContentPath(input.status === 'PUBLISHED' ? 'published' : 'saved'))
 }
 
 export async function deleteContentPostAction(formData: FormData) {
@@ -249,4 +261,6 @@ export async function deleteContentPostAction(formData: FormData) {
 
   revalidatePath('/admin/contenidos')
   revalidatePath('/equipos')
+  revalidatePath('/equipos/[slug]', 'page')
+  redirect(adminContentPath('deleted'))
 }

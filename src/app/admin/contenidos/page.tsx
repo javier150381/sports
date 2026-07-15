@@ -24,7 +24,29 @@ const contentTypes = [
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminContentPage() {
+type AdminContentPageProps = {
+  searchParams?: Promise<{ message?: string }>
+}
+
+function getMessageText(message?: string) {
+  if (message === 'published') {
+    return 'Contenido guardado y publicado.'
+  }
+
+  if (message === 'saved') {
+    return 'Cambios guardados correctamente.'
+  }
+
+  if (message === 'deleted') {
+    return 'Contenido eliminado.'
+  }
+
+  return null
+}
+
+export default async function AdminContentPage({ searchParams }: AdminContentPageProps) {
+  const params = await searchParams
+  const message = getMessageText(params?.message)
   const { teams, posts } = await getAdminContentPageData()
 
   return (
@@ -33,6 +55,12 @@ export default async function AdminContentPage() {
       <p className="mt-3 text-muted">
         Publica enlaces oficiales, memes, imagenes, promociones y etiquetas visuales por equipo.
       </p>
+
+      {message ? (
+        <div className="mt-5 rounded border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">
+          {message}
+        </div>
+      ) : null}
 
       <form action={createContentPostAction} className="mt-8 rounded border border-border bg-panel p-5">
         <h2 className="text-xl font-black">Nuevo contenido</h2>
