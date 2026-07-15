@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 const sportsDbEventSchema = z.object({
   idEvent: z.string(),
+  idHomeTeam: z.string().nullable(),
+  idAwayTeam: z.string().nullable(),
   strEvent: z.string().nullable(),
   strHomeTeam: z.string().nullable(),
   strAwayTeam: z.string().nullable(),
@@ -28,6 +30,8 @@ const sportsDbEventsResponseSchema = z.object({
 
 export type ExternalTeamEvent = {
   id: string
+  homeTeamExternalId: string | null
+  awayTeamExternalId: string | null
   title: string
   homeTeam: string | null
   awayTeam: string | null
@@ -99,6 +103,8 @@ export async function getNextExternalTeamEvents(teamExternalId: string | null) {
     return (parsed.data.events ?? []).map(
       (event): ExternalTeamEvent => ({
         id: event.idEvent,
+        homeTeamExternalId: event.idHomeTeam,
+        awayTeamExternalId: event.idAwayTeam,
         title: event.strEvent ?? [event.strHomeTeam, event.strAwayTeam].filter(Boolean).join(' vs '),
         homeTeam: event.strHomeTeam,
         awayTeam: event.strAwayTeam,
