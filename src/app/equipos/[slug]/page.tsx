@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { MobileContainer } from '@/components/mobile-container'
 import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { MemeCarousel } from '@/features/content/meme-carousel'
+import { VideoCarousel } from '@/features/content/video-carousel'
 import {
   getExternalLeagueTable,
   getExternalTeamEquipment,
@@ -191,7 +192,14 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const syncedFixture = dataFixture && hasSyncedDetails(dataFixture) ? dataFixture : null
   const dataExternalEvent = nextExternalEvent ?? null
   const memes = team.content.filter((post) => post.content_type === 'MEME')
-  const featuredContent = team.content.filter((post) => post.content_type !== 'MEME')
+  const videos = team.content.filter((post) =>
+    ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(post.content_type),
+  )
+  const featuredContent = team.content.filter(
+    (post) =>
+      post.content_type !== 'MEME' &&
+      !['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(post.content_type),
+  )
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
 
   return (
@@ -506,8 +514,10 @@ export default async function TeamPage({ params }: TeamPageProps) {
         </article>
       </section>
 
+      <VideoCarousel videos={videos} teamName={team.name} />
+
       <section className="mt-6">
-        <h2 className="text-2xl font-black">Contenido destacado</h2>
+        <h2 className="text-2xl font-black">Actualidad reciente</h2>
         <div className="mt-4 grid gap-4">
           {featuredContent.map((post) => {
             const embed = getEmbedInfo(post.external_url)

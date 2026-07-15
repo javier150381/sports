@@ -47,6 +47,8 @@ export type TeamDetail = TeamListItem & {
     alt_text: string | null
     is_featured: boolean
     nfc_exclusive: boolean
+    published_at: string | null
+    created_at: string
   }>
 }
 
@@ -111,12 +113,13 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
     supabase
       .from('content_posts')
       .select(
-        'id, title, description, content_type, external_url, image_url, alt_text, is_featured, nfc_exclusive',
+        'id, title, description, content_type, external_url, image_url, alt_text, is_featured, nfc_exclusive, published_at, created_at',
       )
       .eq('team_id', team.id)
       .eq('status', 'PUBLISHED')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order('display_order', { ascending: true })
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
       .limit(50),
   ])
 
