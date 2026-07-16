@@ -117,6 +117,26 @@ function formatMatchDate(value: string | null) {
   }).format(new Date(value))
 }
 
+function formatFixtureDateTime(value: string) {
+  return new Intl.DateTimeFormat('es-EC', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Guayaquil',
+  }).format(new Date(value))
+}
+
+function formatFixtureScore(
+  fixture: NonNullable<
+    Awaited<ReturnType<typeof getTeamBySlug>>
+  >['fixtures'][number],
+) {
+  if (fixture.home_score === null || fixture.away_score === null) {
+    return 'vs.'
+  }
+
+  return `${fixture.home_score} - ${fixture.away_score}`
+}
+
 function normalizeTeamName(value: string | null) {
   return (value ?? '')
     .normalize('NFD')
@@ -160,6 +180,19 @@ export default async function TeamPage({ params }: TeamPageProps) {
           Date.parse(first.match_date) - Date.parse(second.match_date),
       )[0] ?? null
   const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
+  const latestResult =
+    team.fixtures
+      .filter(
+        (fixture) =>
+          fixture.status === 'POST_MATCH' &&
+          fixture.home_score !== null &&
+          fixture.away_score !== null,
+      )
+      .sort(
+        (first, second) =>
+          Date.parse(second.match_date) - Date.parse(first.match_date),
+      )[0] ?? null
+  const scoreFixture = liveFixture ?? latestResult
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const videos = team.content.filter((post) =>
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
@@ -212,6 +245,46 @@ export default async function TeamPage({ params }: TeamPageProps) {
       </section>
 
       <section className="mt-5 grid gap-4">
+        {scoreFixture ? (
+          <article className="rounded border border-border bg-panel p-5">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+              {scoreFixture.status === 'LIVE'
+                ? 'Marcador en vivo'
+                : 'Ultimo resultado'}
+            </p>
+            <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
+              <div>
+                <p className="text-base font-black">
+                  {scoreFixture.home_team?.name}
+                </p>
+              </div>
+              <p className="rounded bg-accent px-4 py-2 text-xl font-black text-white">
+                {formatFixtureScore(scoreFixture)}
+              </p>
+              <div>
+                <p className="text-base font-black">
+                  {scoreFixture.away_team?.name}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-center text-sm text-muted">
+              {[
+                scoreFixture.status === 'LIVE'
+                  ? `Minuto ${scoreFixture.minute ?? '--'}`
+                  : 'Finalizado',
+                formatFixtureDateTime(scoreFixture.match_date),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+            {scoreFixture.venue ? (
+              <p className="mt-2 text-center text-xs text-muted">
+                {scoreFixture.venue}
+              </p>
+            ) : null}
+          </article>
+        ) : null}
+
         <article className="rounded border border-border bg-panel p-5">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
             Proximo partido
@@ -393,25 +466,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
             </div>
           </article>
         ) : null}
-
-        <article className="rounded border border-border bg-panel p-5">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
-            Partido en vivo
-          </p>
-          {liveFixture ? (
-            <div className="mt-4">
-              <h2 className="text-xl font-black">
-                {liveFixture.home_team?.short_name} {liveFixture.home_score} -{' '}
-                {liveFixture.away_score} {liveFixture.away_team?.short_name}
-              </h2>
-              <p className="mt-2 font-mono text-accent-strong">
-                Minuto {liveFixture.minute}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-muted">Sin marcador en vivo ahora mismo.</p>
-          )}
-        </article>
       </section>
 
       <VideoCarousel videos={videos} teamName={team.name} />
