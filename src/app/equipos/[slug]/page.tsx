@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
 import { ImageGalleryCarousel } from '@/features/content/image-gallery-carousel'
-import { TeamChantCard } from '@/features/content/team-chant-card'
+import { TeamChantCarousel } from '@/features/content/team-chant-card'
 import { VideoCarousel } from '@/features/content/video-carousel'
 import {
   getExternalTeamEquipment,
@@ -120,8 +120,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const galleryImages = team.content.filter(
     (post) => post.content_type === 'IMAGE',
   )
-  const teamChant =
-    team.content.find((post) => post.content_type === 'TEAM_CHANT') ?? null
+  const teamChants = team.content.filter(
+    (post) => post.content_type === 'TEAM_CHANT',
+  )
   const videos = team.content.filter((post) =>
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
       post.content_type,
@@ -167,7 +168,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
               <p className="mt-2 max-w-2xl text-muted">{team.description}</p>
             </div>
           </div>
-          <TeamChantCard chant={teamChant} />
+          <TeamChantCarousel chants={teamChants} />
         </div>
       </section>
 
