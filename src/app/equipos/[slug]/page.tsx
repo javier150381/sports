@@ -383,42 +383,43 @@ export default async function TeamPage({ params }: TeamPageProps) {
           </article>
         ) : null}
 
-        {equipment.length > 0 ? (
-          <article className="rounded border border-border bg-panel p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
-              Camisetas historicas
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {equipment.slice(0, 8).map((kit) => (
-                <div
-                  key={kit.id ?? `${kit.season}-${kit.type}`}
-                  className="rounded border border-border p-3"
-                >
-                  {kit.image ? (
-                    <div className="relative aspect-square overflow-hidden rounded bg-background">
-                      <Image
-                        src={kit.image}
-                        alt={`${kit.type ?? 'Camiseta'} ${kit.season ?? ''}`}
-                        fill
-                        sizes="160px"
-                        className="object-contain p-2"
-                      />
-                    </div>
-                  ) : null}
-                  <h3 className="mt-3 text-sm font-black">
-                    {kit.type ?? 'Equipamiento'}
-                  </h3>
-                  <p className="text-xs text-muted">{kit.season}</p>
-                </div>
-              ))}
-            </div>
-          </article>
-        ) : null}
       </section>
 
       <VideoCarousel videos={videos} teamName={team.name} />
 
       <MemeCarousel memes={memes} teamName={team.name} />
+
+      {equipment.length > 0 ? (
+        <section className="mt-6 rounded border border-border bg-panel p-5">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+            Camisetas historicas
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {equipment.slice(0, 8).map((kit) => (
+              <div
+                key={kit.id ?? `${kit.season}-${kit.type}`}
+                className="rounded border border-border p-3"
+              >
+                {kit.image ? (
+                  <div className="relative aspect-square overflow-hidden rounded bg-background">
+                    <Image
+                      src={kit.image}
+                      alt={`${kit.type ?? 'Camiseta'} ${kit.season ?? ''}`}
+                      fill
+                      sizes="160px"
+                      className="object-contain p-2"
+                    />
+                  </div>
+                ) : null}
+                <h3 className="mt-3 text-sm font-black">
+                  {kit.type ?? 'Equipamiento'}
+                </h3>
+                <p className="text-xs text-muted">{kit.season}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </MobileContainer>
   )
 }
