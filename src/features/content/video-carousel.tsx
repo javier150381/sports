@@ -1,7 +1,14 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, ExternalLink, Play, Share2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Play,
+  Share2,
+} from 'lucide-react'
+import { TikTokEmbed } from '@/features/content/tiktok-embed'
 
 type VideoItem = {
   id: string
@@ -20,7 +27,26 @@ type VideoCarouselProps = {
   title?: string
 }
 
-function getEmbedUrl(url: string | null) {
+type VideoEmbed = {
+  kind: 'iframe' | 'tiktok-script'
+  url: string
+}
+
+function getYouTubeVideoId(parsed: URL) {
+  const parts = parsed.pathname.split('/').filter(Boolean)
+
+  if (parsed.hostname.replace('www.', '') === 'youtu.be') {
+    return parts[0] ?? null
+  }
+
+  if (parts[0] === 'shorts' || parts[0] === 'embed' || parts[0] === 'live') {
+    return parts[1] ?? null
+  }
+
+  return parsed.searchParams.get('v')
+}
+
+function getEmbed(url: string | null): VideoEmbed | null {
   if (!url) {
     return null
   }
@@ -29,28 +55,38 @@ function getEmbedUrl(url: string | null) {
     const parsed = new URL(url)
     const host = parsed.hostname.replace('www.', '')
 
-    if (host === 'youtube.com' || host === 'm.youtube.com') {
-      const videoId = parsed.searchParams.get('v')
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null
-    }
-
-    if (host === 'youtu.be') {
-      const videoId = parsed.pathname.split('/').filter(Boolean)[0]
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be') {
+      const videoId = getYouTubeVideoId(parsed)
+      return videoId
+        ? { kind: 'iframe', url: `https://www.youtube.com/embed/${videoId}` }
+        : null
     }
 
     if (host === 'drive.google.com') {
       const parts = parsed.pathname.split('/').filter(Boolean)
       const fileIndex = parts.findIndex((part) => part === 'd')
-      const fileId = fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
-      return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null
+      const fileId =
+        fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
+
+      return fileId
+        ? {
+            kind: 'iframe',
+            url: `https://drive.google.com/file/d/${fileId}/preview`,
+          }
+        : null
     }
 
     if (host === 'tiktok.com' || host === 'm.tiktok.com') {
       const parts = parsed.pathname.split('/').filter(Boolean)
       const videoIndex = parts.findIndex((part) => part === 'video')
       const videoId = videoIndex >= 0 ? parts[videoIndex + 1] : null
-      return videoId ? `https://www.tiktok.com/embed/v2/${videoId}` : null
+      return videoId
+        ? { kind: 'iframe', url: `https://www.tiktok.com/embed/v2/${videoId}` }
+        : { kind: 'tiktok-script', url }
+    }
+
+    if (host === 'vm.tiktok.com' || host === 'vt.tiktok.com') {
+      return { kind: 'tiktok-script', url }
     }
   } catch {
     return null
@@ -80,7 +116,10 @@ export function VideoCarousel({
     }
 
     carousel.scrollBy({
-      left: direction === 'right' ? carousel.clientWidth * 0.86 : carousel.clientWidth * -0.86,
+      left:
+        direction === 'right'
+          ? carousel.clientWidth * 0.86
+          : carousel.clientWidth * -0.86,
       behavior: 'smooth',
     })
   }
@@ -141,9 +180,16 @@ export function VideoCarousel({
         className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3"
       >
         {videos.map((video) => {
-          const embedUrl = getEmbedUrl(video.external_url)
+          const embed = getEmbed(video.external_url)
           const isActive = activeVideoId === video.id
           const isLiveStream = video.content_type === 'LIVE_STREAM'
+          const canPlayInline = Boolean(embed)
+          const contentLabel =
+            video.content_type === 'HISTORIC_MOMENT'
+              ? 'Historico'
+              : isLiveStream
+                ? 'Transmision en vivo'
+                : 'Reciente'
 
           return (
             <article
@@ -176,9 +222,11 @@ export function VideoCarousel({
                       </span>
                     </span>
                   </a>
-                ) : isActive && embedUrl ? (
+                ) : isActive && embed?.kind === 'tiktok-script' ? (
+                  <TikTokEmbed url={embed.url} title={video.title} />
+                ) : isActive && embed ? (
                   <iframe
-                    src={embedUrl}
+                    src={embed.url}
                     title={video.title}
                     className="absolute inset-0 h-full w-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -187,7 +235,11 @@ export function VideoCarousel({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setActiveVideoId(video.id)}
+                    onClick={() => {
+                      if (canPlayInline) {
+                        setActiveVideoId(video.id)
+                      }
+                    }}
                     className="relative h-full w-full overflow-hidden text-left"
                   >
                     {video.image_url ? (
@@ -204,7 +256,14 @@ export function VideoCarousel({
                     )}
                     <span className="absolute inset-0 grid place-items-center">
                       <span className="grid size-14 place-items-center rounded-full bg-accent text-white">
-                        <Play className="ml-1 size-6 fill-current" aria-hidden="true" />
+                        {canPlayInline ? (
+                          <Play
+                            className="ml-1 size-6 fill-current"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <ExternalLink className="size-6" aria-hidden="true" />
+                        )}
                       </span>
                     </span>
                   </button>
@@ -212,7 +271,7 @@ export function VideoCarousel({
               </div>
               <div className="p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-                  {isLiveStream ? 'Transmision en vivo' : 'Reciente'}
+                  {contentLabel}
                 </p>
                 <h3 className="mt-2 font-black">{video.title}</h3>
                 {video.description ? (
@@ -221,7 +280,7 @@ export function VideoCarousel({
                   </p>
                 ) : null}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {isLiveStream && video.external_url ? (
+                  {(isLiveStream || !canPlayInline) && video.external_url ? (
                     <a
                       href={video.external_url}
                       target="_blank"
@@ -229,7 +288,7 @@ export function VideoCarousel({
                       className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2 text-sm font-black text-white transition hover:bg-accent-strong"
                     >
                       <ExternalLink className="size-4" aria-hidden="true" />
-                      Ver transmision
+                      {isLiveStream ? 'Ver transmision' : 'Ver enlace'}
                     </a>
                   ) : null}
                   <button
