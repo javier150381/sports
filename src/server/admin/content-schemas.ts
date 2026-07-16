@@ -6,7 +6,6 @@ export const contentTypeSchema = z.enum([
   'GOAL_VIDEO',
   'HIGHLIGHT',
   'HISTORIC_MOMENT',
-  'MEME',
   'IMAGE',
   'PROMOTION',
   'LIVE_STREAM',
