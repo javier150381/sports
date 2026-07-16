@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
 import { ImageGalleryCarousel } from '@/features/content/image-gallery-carousel'
+import { TeamChantCard } from '@/features/content/team-chant-card'
 import { VideoCarousel } from '@/features/content/video-carousel'
 import {
   getExternalTeamEquipment,
@@ -119,6 +120,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const galleryImages = team.content.filter(
     (post) => post.content_type === 'IMAGE',
   )
+  const teamChant =
+    team.content.find((post) => post.content_type === 'TEAM_CHANT') ?? null
   const videos = team.content.filter((post) =>
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
       post.content_type,
@@ -142,21 +145,24 @@ export default async function TeamPage({ params }: TeamPageProps) {
           Equipo Ecuador
         </p>
         <div className="mt-4 flex flex-col gap-5">
-          <div
-            className="grid size-20 place-items-center overflow-hidden rounded border border-border bg-background font-mono text-2xl font-black"
-            style={{
-              backgroundColor: team.primary_color ?? '#111827',
-              color: team.secondary_color ?? '#ffffff',
-              backgroundImage: team.logo_url
-                ? `url(${team.logo_url})`
-                : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            {team.logo_url
-              ? null
-              : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div
+              className="grid size-20 shrink-0 place-items-center overflow-hidden rounded border border-border bg-background font-mono text-2xl font-black"
+              style={{
+                backgroundColor: team.primary_color ?? '#111827',
+                color: team.secondary_color ?? '#ffffff',
+                backgroundImage: team.logo_url
+                  ? `url(${team.logo_url})`
+                  : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              {team.logo_url
+                ? null
+                : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
+            </div>
+            <TeamChantCard chant={teamChant} />
           </div>
           <div>
             <h1 className="text-3xl font-black">{team.name}</h1>

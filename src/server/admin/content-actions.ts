@@ -6,6 +6,7 @@ import type { Route } from 'next'
 import { requireRole } from '@/server/auth/authorization'
 import {
   HISTORIC_MOMENT_MARKER,
+  TEAM_CHANT_MARKER,
   WEB_EMBED_MARKER,
 } from '@/server/content/content-types'
 import { createSupabaseServerClient } from '@/server/supabase/server'
@@ -45,6 +46,10 @@ function getPersistedContentType(contentType: string) {
     return 'VIDEO'
   }
 
+  if (contentType === 'TEAM_CHANT') {
+    return 'VIDEO'
+  }
+
   return contentType
 }
 
@@ -58,6 +63,10 @@ function getPersistedAltText(input: {
 
   if (input.content_type === 'HISTORIC_MOMENT') {
     return HISTORIC_MOMENT_MARKER
+  }
+
+  if (input.content_type === 'TEAM_CHANT') {
+    return TEAM_CHANT_MARKER
   }
 
   return optionalValue(input.alt_text)

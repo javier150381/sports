@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const contentTypeSchema = z.enum([
   'NEWS',
   'VIDEO',
+  'TEAM_CHANT',
   'GOAL_VIDEO',
   'HIGHLIGHT',
   'HISTORIC_MOMENT',
