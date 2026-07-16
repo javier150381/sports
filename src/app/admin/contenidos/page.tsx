@@ -15,6 +15,7 @@ const contentTypes = [
   'VIDEO',
   'GOAL_VIDEO',
   'HIGHLIGHT',
+  'HISTORIC_MOMENT',
   'MEME',
   'IMAGE',
   'PROMOTION',
@@ -48,7 +49,7 @@ function getMessageText(message?: string) {
 
 function getErrorText(error?: string) {
   if (error === 'content-type') {
-    return 'Supabase todavia no acepta este tipo de contenido. Ejecuta la migracion WEB_EMBED en SQL Editor y vuelve a intentar.'
+    return 'Supabase todavia no acepta este tipo de contenido. Ejecuta las migraciones pendientes en SQL Editor y vuelve a intentar.'
   }
 
   if (error === 'invalid') {

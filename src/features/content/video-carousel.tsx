@@ -16,6 +16,8 @@ type VideoItem = {
 type VideoCarouselProps = {
   videos: VideoItem[]
   teamName: string
+  eyebrow?: string
+  title?: string
 }
 
 function getEmbedUrl(url: string | null) {
@@ -57,7 +59,12 @@ function getEmbedUrl(url: string | null) {
   return null
 }
 
-export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
+export function VideoCarousel({
+  videos,
+  teamName,
+  eyebrow = 'Videos',
+  title = 'Videos recientes',
+}: VideoCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null)
 
@@ -100,9 +107,9 @@ export function VideoCarousel({ videos, teamName }: VideoCarouselProps) {
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent-strong">
-            Videos
+            {eyebrow}
           </p>
-          <h2 className="mt-1 text-2xl font-black">Videos recientes</h2>
+          <h2 className="mt-1 text-2xl font-black">{title}</h2>
         </div>
         <div className="flex items-center gap-2">
           <p className="text-xs text-muted">{videos.length} videos</p>

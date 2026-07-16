@@ -146,6 +146,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
       post.content_type,
     ),
   )
+  const historicMoments = team.content.filter(
+    (post) => post.content_type === 'HISTORIC_MOMENT',
+  )
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
 
   return (
@@ -386,6 +389,13 @@ export default async function TeamPage({ params }: TeamPageProps) {
       </section>
 
       <VideoCarousel videos={videos} teamName={team.name} />
+
+      <VideoCarousel
+        videos={historicMoments}
+        teamName={team.name}
+        eyebrow="Historia"
+        title="Momentos historicos"
+      />
 
       <MemeCarousel memes={memes} teamName={team.name} />
 
