@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { Route } from 'next'
 import { requireRole } from '@/server/auth/authorization'
+import { WEB_EMBED_MARKER } from '@/server/content/content-types'
 import { createSupabaseServerClient } from '@/server/supabase/server'
 import { contentPostInputSchema } from './content-schemas'
 
@@ -30,6 +31,19 @@ function getContentErrorCode(message: string) {
   }
 
   return 'save'
+}
+
+function getPersistedContentType(contentType: string) {
+  return contentType === 'WEB_EMBED' ? 'ANNOUNCEMENT' : contentType
+}
+
+function getPersistedAltText(input: {
+  alt_text?: string
+  content_type: string
+}) {
+  return input.content_type === 'WEB_EMBED'
+    ? WEB_EMBED_MARKER
+    : optionalValue(input.alt_text)
 }
 
 export async function createContentPostAction(formData: FormData) {
@@ -65,10 +79,10 @@ export async function createContentPostAction(formData: FormData) {
   const { error } = await supabase.from('content_posts').insert({
     title: input.title,
     description: optionalValue(input.description),
-    content_type: input.content_type,
+    content_type: getPersistedContentType(input.content_type),
     external_url: optionalValue(input.external_url),
     image_url: optionalValue(input.image_url),
-    alt_text: optionalValue(input.alt_text),
+    alt_text: getPersistedAltText(input),
     team_id: optionalValue(input.team_id),
     status: input.status,
     is_featured: input.is_featured,
@@ -247,10 +261,10 @@ export async function updateContentPostAction(formData: FormData) {
     .update({
       title: input.title,
       description: optionalValue(input.description),
-      content_type: input.content_type,
+      content_type: getPersistedContentType(input.content_type),
       external_url: optionalValue(input.external_url),
       image_url: optionalValue(input.image_url),
-      alt_text: optionalValue(input.alt_text),
+      alt_text: getPersistedAltText(input),
       team_id: optionalValue(input.team_id),
       status: input.status,
       is_featured: input.is_featured,

@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/server/supabase/server'
+import { normalizeContentPostType } from '@/server/content/content-types'
 import { getActiveTeams } from '@/server/teams/queries'
 
 export type AdminContentPost = {
@@ -54,10 +55,11 @@ export async function getAdminContentPageData(teamSlug?: string) {
   }
 
   const posts = (contentResult.data as unknown as AdminContentRow[]).map(
-    (post) => ({
-      ...post,
-      team: firstRelation(post.team),
-    }),
+    (post) =>
+      normalizeContentPostType({
+        ...post,
+        team: firstRelation(post.team),
+      }),
   )
 
   return { teams, posts, selectedTeam }

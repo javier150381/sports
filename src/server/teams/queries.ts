@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/server/supabase/server'
+import { normalizeContentPostType } from '@/server/content/content-types'
 
 export type TeamListItem = {
   id: string
@@ -52,7 +53,10 @@ export type TeamDetail = TeamListItem & {
   }>
 }
 
-type FixtureRow = Omit<TeamDetail['fixtures'][number], 'home_team' | 'away_team'> & {
+type FixtureRow = Omit<
+  TeamDetail['fixtures'][number],
+  'home_team' | 'away_team'
+> & {
   home_team:
     | TeamDetail['fixtures'][number]['home_team']
     | Array<NonNullable<TeamDetail['fixtures'][number]['home_team']>>
@@ -132,6 +136,10 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
           home_team: firstRelation(fixture.home_team),
           away_team: firstRelation(fixture.away_team),
         })),
-    content: contentResult.error ? [] : (contentResult.data as TeamDetail['content']),
+    content: contentResult.error
+      ? []
+      : (contentResult.data as TeamDetail['content']).map((post) =>
+          normalizeContentPostType(post),
+        ),
   }
 }
