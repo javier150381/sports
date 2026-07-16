@@ -6,17 +6,8 @@ import { requireRole } from '@/server/auth/authorization'
 const adminLinks: Array<[string, Route]> = [
   ['Panel', '/admin'],
   ['Equipos', '/admin/equipos'],
-  ['Competiciones', '/admin/competiciones'],
-  ['Eventos', '/admin/eventos'],
-  ['Colecciones', '/admin/colecciones'],
-  ['Camisetas', '/admin/camisetas'],
   ['Partidos', '/admin/partidos'],
   ['Contenidos', '/admin/contenidos'],
-  ['Encuestas', '/admin/encuestas'],
-  ['Promociones', '/admin/promociones'],
-  ['Cupones', '/admin/cupones'],
-  ['Usuarios', '/admin/usuarios'],
-  ['Configuracion', '/admin/configuracion'],
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
