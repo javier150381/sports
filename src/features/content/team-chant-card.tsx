@@ -1,7 +1,13 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, ExternalLink, Music2, Play } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Music2,
+  Play,
+} from 'lucide-react'
 
 type TeamChant = {
   id: string
@@ -123,10 +129,60 @@ export function TeamChantCarousel({ chants }: TeamChantCarouselProps) {
           return (
             <article
               key={chant.id}
-              className="min-w-full snap-center overflow-hidden rounded border border-border bg-background"
+              className="min-w-[88%] snap-center overflow-hidden rounded border border-border bg-background sm:min-w-full"
             >
-              <div className="relative aspect-video bg-black">
-                {isActive && embedUrl ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (embedUrl) {
+                    setActiveChantId(isActive ? null : chant.id)
+                  }
+                }}
+                className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-panel"
+              >
+                <span className="relative size-14 shrink-0 overflow-hidden rounded bg-black">
+                  {chant.image_url ? (
+                    <span
+                      className="block h-full w-full bg-cover bg-center opacity-80"
+                      style={{ backgroundImage: `url("${chant.image_url}")` }}
+                    />
+                  ) : (
+                    <span className="grid h-full place-items-center">
+                      <Music2
+                        className="size-6 text-accent"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  )}
+                  <span className="absolute inset-0 grid place-items-center">
+                    <span className="grid size-8 place-items-center rounded-full bg-accent text-white">
+                      {embedUrl ? (
+                        <Play
+                          className="ml-0.5 size-4 fill-current"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <ExternalLink className="size-4" aria-hidden="true" />
+                      )}
+                    </span>
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-accent-strong">
+                    Cantico
+                  </span>
+                  <span className="mt-1 block truncate text-sm font-black">
+                    {chant.title}
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">
+                    {isActive ? 'Toca para ocultar' : 'Escuchar'}
+                  </span>
+                </span>
+              </button>
+
+              {isActive && embedUrl ? (
+                <div className="border-t border-border">
+                  <div className="relative aspect-video max-h-36 bg-black">
                   <iframe
                     src={embedUrl}
                     title={chant.title}
@@ -134,64 +190,20 @@ export function TeamChantCarousel({ chants }: TeamChantCarouselProps) {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (embedUrl) {
-                        setActiveChantId(chant.id)
-                      }
-                    }}
-                    className="relative h-full w-full overflow-hidden text-left"
-                  >
-                    {chant.image_url ? (
-                      <div
-                        className="h-full w-full bg-cover bg-center opacity-80"
-                        style={{ backgroundImage: `url("${chant.image_url}")` }}
-                      />
-                    ) : (
-                      <div className="grid h-full place-items-center">
-                        <Music2 className="size-9 text-accent" aria-hidden="true" />
-                      </div>
-                    )}
-                    <span className="absolute inset-0 grid place-items-center">
-                      <span className="grid size-12 place-items-center rounded-full bg-accent text-white">
-                        {embedUrl ? (
-                          <Play
-                            className="ml-1 size-5 fill-current"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <ExternalLink className="size-5" aria-hidden="true" />
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                )}
-              </div>
-              <div className="p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-accent-strong">
-                  Cantico
-                </p>
-                <h2 className="mt-1 line-clamp-1 text-sm font-black">
-                  {chant.title}
-                </h2>
-                {chant.description ? (
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
-                    {chant.description}
-                  </p>
-                ) : null}
-                {!embedUrl ? (
-                  <a
-                    href={chant.external_url ?? '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex text-xs font-black text-accent-strong"
-                  >
-                    Ver en YouTube
-                  </a>
-                ) : null}
-              </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {!embedUrl ? (
+                <a
+                  href={chant.external_url ?? '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block border-t border-border px-3 py-2 text-xs font-black text-accent-strong"
+                >
+                  Ver en YouTube
+                </a>
+              ) : null}
             </article>
           )
         })}
