@@ -137,6 +137,17 @@ function formatFixtureScore(
   return `${fixture.home_score} - ${fixture.away_score}`
 }
 
+function isFreshLiveFixture(matchDate: string, now: Date) {
+  const startsAt = Date.parse(matchDate)
+  const currentTime = now.getTime()
+  const startsThirtyMinutesFromNow = currentTime + 30 * 60 * 1000
+  const startedFourHoursAgo = currentTime - 4 * 60 * 60 * 1000
+
+  return (
+    startsAt >= startedFourHoursAgo && startsAt <= startsThirtyMinutesFromNow
+  )
+}
+
 function normalizeTeamName(value: string | null) {
   return (value ?? '')
     .normalize('NFD')
@@ -179,7 +190,17 @@ export default async function TeamPage({ params }: TeamPageProps) {
         (first, second) =>
           Date.parse(first.match_date) - Date.parse(second.match_date),
       )[0] ?? null
-  const liveFixture = team.fixtures.find((fixture) => fixture.status === 'LIVE')
+  const liveFixture =
+    team.fixtures
+      .filter(
+        (fixture) =>
+          fixture.status === 'LIVE' &&
+          isFreshLiveFixture(fixture.match_date, now),
+      )
+      .sort(
+        (first, second) =>
+          Date.parse(second.match_date) - Date.parse(first.match_date),
+      )[0] ?? null
   const latestResult =
     team.fixtures
       .filter(
