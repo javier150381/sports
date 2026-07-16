@@ -148,6 +148,10 @@ function isFreshLiveFixture(matchDate: string, now: Date) {
   )
 }
 
+function isFutureMatch(value: string | null | undefined, now: Date) {
+  return value ? Date.parse(value) > now.getTime() : false
+}
+
 function normalizeTeamName(value: string | null) {
   return (value ?? '')
     .normalize('NFD')
@@ -175,14 +179,20 @@ export default async function TeamPage({ params }: TeamPageProps) {
     notFound()
   }
 
+  const now = new Date()
   const externalEvents = await getNextExternalTeamEvents(team.external_api_id)
-  const nextExternalEvent = externalEvents[0] ?? null
+  const nextExternalEvent =
+    externalEvents
+      .filter((event) => isFutureMatch(event.startsAt, now))
+      .sort(
+        (first, second) =>
+          Date.parse(first.startsAt ?? '') - Date.parse(second.startsAt ?? ''),
+      )[0] ?? null
   const leagueTable = await getExternalLeagueTable(
     nextExternalEvent?.leagueExternalId ?? null,
     nextExternalEvent?.season ?? null,
   )
   const equipment = await getExternalTeamEquipment(team.external_api_id)
-  const now = new Date()
   const nextFixture =
     team.fixtures
       .filter((fixture) => new Date(fixture.match_date) > now)
@@ -398,9 +408,14 @@ export default async function TeamPage({ params }: TeamPageProps) {
               <p className="mt-2 text-sm text-muted">{nextFixture.venue}</p>
             </div>
           ) : (
-            <p className="mt-4 text-muted">
-              No hay proximos partidos para este equipo.
-            </p>
+            <div className="mt-4 rounded border border-border bg-background/45 p-4">
+              <p className="font-black">Proximo partido por confirmar</p>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                Aun no tenemos una fecha futura confirmada para este equipo.
+                Cuando la API o el panel admin tengan el siguiente partido,
+                aparecera aqui.
+              </p>
+            </div>
           )}
         </article>
 
