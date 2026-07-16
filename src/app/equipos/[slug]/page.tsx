@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
-import { TikTokEmbed } from '@/features/content/tiktok-embed'
 import { MemeCarousel } from '@/features/content/meme-carousel'
 import { VideoCarousel } from '@/features/content/video-carousel'
 import {
@@ -16,91 +15,6 @@ type TeamPageProps = {
 }
 
 export const dynamic = 'force-dynamic'
-
-type EmbedInfo = {
-  url: string
-  kind: 'youtube' | 'tiktok' | 'tiktok-script' | 'drive' | 'web'
-}
-
-function getEmbedFrameClass(kind: EmbedInfo['kind']) {
-  if (kind === 'tiktok') {
-    return 'aspect-[9/16] max-h-[680px]'
-  }
-
-  if (kind === 'drive') {
-    return 'aspect-video'
-  }
-
-  if (kind === 'web') {
-    return 'h-[70vh] min-h-[520px]'
-  }
-
-  return 'aspect-video'
-}
-
-function getEmbedInfo(
-  url: string | null,
-  contentType?: string,
-): EmbedInfo | null {
-  if (!url) {
-    return null
-  }
-
-  try {
-    const parsed = new URL(url)
-    const host = parsed.hostname.replace('www.', '')
-
-    if (host === 'youtube.com' || host === 'm.youtube.com') {
-      const videoId = parsed.searchParams.get('v')
-      return videoId
-        ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' }
-        : null
-    }
-
-    if (host === 'youtu.be') {
-      const videoId = parsed.pathname.split('/').filter(Boolean)[0]
-      return videoId
-        ? { url: `https://www.youtube.com/embed/${videoId}`, kind: 'youtube' }
-        : null
-    }
-
-    if (host === 'tiktok.com' || host === 'm.tiktok.com') {
-      const parts = parsed.pathname.split('/').filter(Boolean)
-      const videoIndex = parts.findIndex((part) => part === 'video')
-      const videoId = videoIndex >= 0 ? parts[videoIndex + 1] : null
-
-      return videoId
-        ? { url: `https://www.tiktok.com/embed/v2/${videoId}`, kind: 'tiktok' }
-        : { url, kind: 'tiktok-script' }
-    }
-
-    if (host === 'vm.tiktok.com' || host === 'vt.tiktok.com') {
-      return { url, kind: 'tiktok-script' }
-    }
-
-    if (host === 'drive.google.com') {
-      const parts = parsed.pathname.split('/').filter(Boolean)
-      const fileIndex = parts.findIndex((part) => part === 'd')
-      const fileId =
-        fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
-
-      return fileId
-        ? {
-            url: `https://drive.google.com/file/d/${fileId}/preview`,
-            kind: 'drive',
-          }
-        : null
-    }
-
-    if (contentType === 'WEB_EMBED') {
-      return { url: parsed.toString(), kind: 'web' }
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
 
 function formatMatchDate(value: string | null) {
   if (!value) {
@@ -231,13 +145,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
       post.content_type,
     ),
-  )
-  const featuredContent = team.content.filter(
-    (post) =>
-      post.content_type !== 'MEME' &&
-      !['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
-        post.content_type,
-      ),
   )
   const externalMatchDate = formatMatchDate(nextExternalEvent?.startsAt ?? null)
 
@@ -510,84 +417,6 @@ export default async function TeamPage({ params }: TeamPageProps) {
       </section>
 
       <VideoCarousel videos={videos} teamName={team.name} />
-
-      <section className="mt-6">
-        <h2 className="text-2xl font-black">Actualidad reciente</h2>
-        <div className="mt-4 grid gap-4">
-          {featuredContent.map((post) => {
-            const embed = getEmbedInfo(post.external_url, post.content_type)
-
-            return (
-              <article
-                key={post.id}
-                className="overflow-hidden rounded border border-border bg-panel"
-              >
-                {embed?.kind === 'tiktok-script' ? (
-                  <TikTokEmbed url={embed.url} title={post.title} />
-                ) : embed ? (
-                  <div
-                    className={`${getEmbedFrameClass(embed.kind)} relative mx-auto w-full overflow-hidden bg-black`}
-                  >
-                    <iframe
-                      src={embed.url}
-                      title={post.title}
-                      className="absolute inset-0 h-full w-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : post.image_url ? (
-                  <div className="relative aspect-video bg-background">
-                    <Image
-                      src={post.image_url}
-                      alt={post.alt_text ?? post.title}
-                      fill
-                      sizes="(min-width: 768px) 33vw, 100vw"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : null}
-                <div className="p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-strong">
-                    {post.content_type}
-                  </p>
-                  <h3 className="mt-3 font-black">{post.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    {post.description}
-                  </p>
-                  {post.external_url && !embed ? (
-                    <a
-                      href={post.external_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex rounded bg-accent px-4 py-2 text-sm font-black text-white transition hover:bg-accent-strong"
-                    >
-                      Ver enlace oficial
-                    </a>
-                  ) : null}
-                  {embed?.kind === 'web' ? (
-                    <p className="mt-3 text-xs leading-5 text-muted">
-                      Si la pagina no carga dentro del contenedor, ese sitio
-                      bloquea la vista embebida por seguridad.
-                    </p>
-                  ) : null}
-                  {post.nfc_exclusive ? (
-                    <p className="mt-4 rounded bg-accent/15 px-3 py-2 text-xs font-bold text-accent-strong">
-                      Exclusivo NFC
-                    </p>
-                  ) : null}
-                </div>
-              </article>
-            )
-          })}
-          {featuredContent.length === 0 ? (
-            <p className="rounded border border-border bg-panel p-5 text-muted">
-              Todavia no hay contenido publicado para este equipo.
-            </p>
-          ) : null}
-        </div>
-      </section>
 
       <MemeCarousel memes={memes} teamName={team.name} />
     </MobileContainer>
