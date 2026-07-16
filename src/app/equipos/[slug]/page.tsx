@@ -144,8 +144,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-strong">
           Equipo Ecuador
         </p>
-        <div className="mt-4 flex flex-col gap-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mt-4 grid gap-5 md:grid-cols-[1fr_minmax(210px,240px)] md:items-start">
+          <div className="flex flex-col gap-5">
             <div
               className="grid size-20 shrink-0 place-items-center overflow-hidden rounded border border-border bg-background font-mono text-2xl font-black"
               style={{
@@ -162,12 +162,12 @@ export default async function TeamPage({ params }: TeamPageProps) {
                 ? null
                 : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
             </div>
-            <TeamChantCard chant={teamChant} />
+            <div>
+              <h1 className="text-3xl font-black">{team.name}</h1>
+              <p className="mt-2 max-w-2xl text-muted">{team.description}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-black">{team.name}</h1>
-            <p className="mt-2 max-w-2xl text-muted">{team.description}</p>
-          </div>
+          <TeamChantCard chant={teamChant} />
         </div>
       </section>
 
