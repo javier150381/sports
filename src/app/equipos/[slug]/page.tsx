@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { MobileContainer } from '@/components/mobile-container'
-import { MemeCarousel } from '@/features/content/meme-carousel'
+import { ImageGalleryCarousel } from '@/features/content/image-gallery-carousel'
 import { VideoCarousel } from '@/features/content/video-carousel'
 import {
   getExternalTeamEquipment,
@@ -116,7 +116,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const scoreFixture = liveFixture ?? latestResult
   const scoreStatusLabel =
     scoreFixture?.status === 'LIVE' ? 'En vivo' : 'Finalizado'
-  const memes = team.content.filter((post) => post.content_type === 'MEME')
+  const galleryImages = team.content.filter(
+    (post) => post.content_type === 'IMAGE',
+  )
   const videos = team.content.filter((post) =>
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
       post.content_type,
@@ -316,7 +318,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
         title="Momentos historicos"
       />
 
-      <MemeCarousel memes={memes} teamName={team.name} />
+      <ImageGalleryCarousel images={galleryImages} teamName={team.name} />
 
       {equipment.length > 0 ? (
         <section className="mt-6 rounded border border-border bg-panel p-5">

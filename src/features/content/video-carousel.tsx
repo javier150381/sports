@@ -28,8 +28,15 @@ type VideoCarouselProps = {
 }
 
 type VideoEmbed = {
-  kind: 'iframe' | 'tiktok-script'
+  kind: 'iframe' | 'tiktok-script' | 'video'
   url: string
+}
+
+const videoFileExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.m4v']
+
+function isDirectVideoUrl(parsed: URL) {
+  const pathname = parsed.pathname.toLowerCase()
+  return videoFileExtensions.some((extension) => pathname.endsWith(extension))
 }
 
 function getYouTubeVideoId(parsed: URL) {
@@ -55,7 +62,17 @@ function getEmbed(url: string | null): VideoEmbed | null {
     const parsed = new URL(url)
     const host = parsed.hostname.replace('www.', '')
 
-    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be') {
+    if (isDirectVideoUrl(parsed)) {
+      return { kind: 'video', url: parsed.toString() }
+    }
+
+    if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'music.youtube.com' ||
+      host === 'youtube-nocookie.com' ||
+      host === 'youtu.be'
+    ) {
       const videoId = getYouTubeVideoId(parsed)
       return videoId
         ? { kind: 'iframe', url: `https://www.youtube.com/embed/${videoId}` }
@@ -66,7 +83,9 @@ function getEmbed(url: string | null): VideoEmbed | null {
       const parts = parsed.pathname.split('/').filter(Boolean)
       const fileIndex = parts.findIndex((part) => part === 'd')
       const fileId =
-        fileIndex >= 0 ? parts[fileIndex + 1] : parsed.searchParams.get('id')
+        fileIndex >= 0
+          ? parts[fileIndex + 1]
+          : parsed.searchParams.get('id')
 
       return fileId
         ? {
@@ -224,6 +243,14 @@ export function VideoCarousel({
                   </a>
                 ) : isActive && embed?.kind === 'tiktok-script' ? (
                   <TikTokEmbed url={embed.url} title={video.title} />
+                ) : isActive && embed?.kind === 'video' ? (
+                  <video
+                    src={embed.url}
+                    title={video.title}
+                    className="absolute inset-0 h-full w-full bg-black"
+                    controls
+                    playsInline
+                  />
                 ) : isActive && embed ? (
                   <iframe
                     src={embed.url}

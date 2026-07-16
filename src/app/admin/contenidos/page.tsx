@@ -99,8 +99,8 @@ export default async function AdminContentPage({
     <div>
       <h1 className="text-3xl font-black">Contenidos</h1>
       <p className="mt-3 text-muted">
-        Publica enlaces oficiales, memes, imagenes, promociones y etiquetas
-        visuales por equipo.
+        Publica enlaces oficiales, videos, galerias de imagenes, promociones y
+        etiquetas visuales por equipo.
       </p>
 
       {message ? (
