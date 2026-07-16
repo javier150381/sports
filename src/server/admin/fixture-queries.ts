@@ -6,6 +6,7 @@ export type AdminFixture = {
   match_date: string
   venue: string | null
   status: string
+  minute: number | null
   home_score: number | null
   away_score: number | null
   live_data: {
@@ -67,7 +68,7 @@ export async function getAdminFixtures() {
   const { data, error } = await supabase
     .from('fixtures')
     .select(
-      'id, external_fixture_id, match_date, venue, status, home_score, away_score, live_data, home_team:home_team_id(name, slug), away_team:away_team_id(name, slug)',
+      'id, external_fixture_id, match_date, venue, status, minute, home_score, away_score, live_data, home_team:home_team_id(name, slug), away_team:away_team_id(name, slug)',
     )
     .order('match_date', { ascending: true })
     .limit(25)
