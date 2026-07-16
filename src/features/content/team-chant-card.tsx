@@ -85,7 +85,7 @@ export function TeamChantCarousel({ chants }: TeamChantCarouselProps) {
   }
 
   return (
-    <div className="w-full md:max-w-[260px]">
+    <div className="min-w-0 max-w-full overflow-hidden md:max-w-[260px]">
       <div className="mb-2 flex items-end justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-accent-strong">
@@ -117,7 +117,7 @@ export function TeamChantCarousel({ chants }: TeamChantCarouselProps) {
 
       <div
         ref={carouselRef}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
+        className="flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
       >
         {playableChants.map((chant) => {
           const videoId = getYouTubeVideoId(chant.external_url)
@@ -129,7 +129,7 @@ export function TeamChantCarousel({ chants }: TeamChantCarouselProps) {
           return (
             <article
               key={chant.id}
-              className="min-w-[88%] snap-center overflow-hidden rounded border border-border bg-background sm:min-w-full"
+              className="min-w-0 flex-[0_0_100%] snap-center overflow-hidden rounded border border-border bg-background"
             >
               <button
                 type="button"

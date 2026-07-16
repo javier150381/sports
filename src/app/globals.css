@@ -33,10 +33,12 @@
 
 html {
   background: var(--background);
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgb(225 29 46 / 16%), transparent 28rem),
     linear-gradient(180deg, #08090d 0%, #06070a 48%, #0c0d12 100%);
