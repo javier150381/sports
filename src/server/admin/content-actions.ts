@@ -4,7 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { Route } from 'next'
 import { requireRole } from '@/server/auth/authorization'
-import { WEB_EMBED_MARKER } from '@/server/content/content-types'
+import {
+  HISTORIC_MOMENT_MARKER,
+  WEB_EMBED_MARKER,
+} from '@/server/content/content-types'
 import { createSupabaseServerClient } from '@/server/supabase/server'
 import { contentPostInputSchema } from './content-schemas'
 
@@ -34,16 +37,30 @@ function getContentErrorCode(message: string) {
 }
 
 function getPersistedContentType(contentType: string) {
-  return contentType === 'WEB_EMBED' ? 'ANNOUNCEMENT' : contentType
+  if (contentType === 'WEB_EMBED') {
+    return 'ANNOUNCEMENT'
+  }
+
+  if (contentType === 'HISTORIC_MOMENT') {
+    return 'VIDEO'
+  }
+
+  return contentType
 }
 
 function getPersistedAltText(input: {
   alt_text?: string
   content_type: string
 }) {
-  return input.content_type === 'WEB_EMBED'
-    ? WEB_EMBED_MARKER
-    : optionalValue(input.alt_text)
+  if (input.content_type === 'WEB_EMBED') {
+    return WEB_EMBED_MARKER
+  }
+
+  if (input.content_type === 'HISTORIC_MOMENT') {
+    return HISTORIC_MOMENT_MARKER
+  }
+
+  return optionalValue(input.alt_text)
 }
 
 export async function createContentPostAction(formData: FormData) {

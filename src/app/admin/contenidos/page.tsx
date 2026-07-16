@@ -49,7 +49,7 @@ function getMessageText(message?: string) {
 
 function getErrorText(error?: string) {
   if (error === 'content-type') {
-    return 'Supabase todavia no acepta este tipo de contenido. Ejecuta las migraciones pendientes en SQL Editor y vuelve a intentar.'
+    return 'Supabase todavia no acepta este tipo de contenido. Recarga la pagina y vuelve a intentar; si persiste, revisa que el ultimo despliegue este activo.'
   }
 
   if (error === 'invalid') {
