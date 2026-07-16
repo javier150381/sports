@@ -113,7 +113,7 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
       )
       .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`)
       .order('match_date', { ascending: false })
-      .limit(5),
+      .limit(20),
     supabase
       .from('content_posts')
       .select(

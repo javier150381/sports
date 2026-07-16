@@ -193,6 +193,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
           Date.parse(second.match_date) - Date.parse(first.match_date),
       )[0] ?? null
   const scoreFixture = liveFixture ?? latestResult
+  const scoreStatusLabel =
+    scoreFixture?.status === 'LIVE' ? 'En vivo' : 'Finalizado'
   const memes = team.content.filter((post) => post.content_type === 'MEME')
   const videos = team.content.filter((post) =>
     ['VIDEO', 'GOAL_VIDEO', 'HIGHLIGHT', 'LIVE_STREAM'].includes(
@@ -247,11 +249,16 @@ export default async function TeamPage({ params }: TeamPageProps) {
       <section className="mt-5 grid gap-4">
         {scoreFixture ? (
           <article className="rounded border border-border bg-panel p-5">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
-              {scoreFixture.status === 'LIVE'
-                ? 'Marcador en vivo'
-                : 'Ultimo resultado'}
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-muted">
+                {scoreFixture.status === 'LIVE'
+                  ? 'Marcador en vivo'
+                  : 'Ultimo resultado'}
+              </p>
+              <span className="rounded bg-accent px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white">
+                {scoreStatusLabel}
+              </span>
+            </div>
             <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
               <div>
                 <p className="text-base font-black">
@@ -269,13 +276,11 @@ export default async function TeamPage({ params }: TeamPageProps) {
             </div>
             <p className="mt-4 text-center text-sm text-muted">
               {[
-                scoreFixture.status === 'LIVE'
-                  ? `Minuto ${scoreFixture.minute ?? '--'}`
-                  : 'Finalizado',
+                scoreStatusLabel,
                 formatFixtureDateTime(scoreFixture.match_date),
               ]
                 .filter(Boolean)
-                .join(' · ')}
+                .join(' - ')}
             </p>
             {scoreFixture.venue ? (
               <p className="mt-2 text-center text-xs text-muted">
