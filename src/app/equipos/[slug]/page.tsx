@@ -147,25 +147,40 @@ export default async function TeamPage({ params }: TeamPageProps) {
         </p>
         <div className="mt-4 grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(210px,240px)] md:items-start">
           <div className="flex min-w-0 flex-col gap-5">
-            <div
-              className="grid size-20 shrink-0 place-items-center overflow-hidden rounded border border-border bg-background font-mono text-2xl font-black"
-              style={{
-                backgroundColor: team.primary_color ?? '#111827',
-                color: team.secondary_color ?? '#ffffff',
-                backgroundImage: team.logo_url
-                  ? `url(${team.logo_url})`
-                  : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            >
-              {team.logo_url
-                ? null
-                : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
+            <div className="flex min-w-0 items-center gap-3">
+              <div
+                className="grid size-20 shrink-0 place-items-center overflow-hidden rounded border border-border bg-background font-mono text-2xl font-black"
+                style={{
+                  backgroundColor: team.primary_color ?? '#111827',
+                  color: team.secondary_color ?? '#ffffff',
+                  backgroundImage: team.logo_url
+                    ? `url(${team.logo_url})`
+                    : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                {team.logo_url
+                  ? null
+                  : (team.short_name ?? team.name.slice(0, 3).toUpperCase())}
+              </div>
+              <span className="shrink-0 text-lg font-black text-muted">+</span>
+              <div className="relative size-16 shrink-0 overflow-hidden rounded border border-border bg-black">
+                <Image
+                  src="/brand/kuntur-sport-logo.png"
+                  alt="Sello KUNTUR SPORT"
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </div>
             </div>
             <div className="min-w-0">
               <h1 className="text-3xl font-black">{team.name}</h1>
               <p className="mt-2 max-w-2xl text-muted">{team.description}</p>
+              <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-accent-strong">
+                Experiencia NFC por KUNTUR SPORT
+              </p>
             </div>
           </div>
           <TeamChantCarousel chants={teamChants} />
