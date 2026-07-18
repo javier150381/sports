@@ -16,6 +16,7 @@ export type TeamListItem = {
 export type TeamDetail = TeamListItem & {
   fixtures: Array<{
     id: string
+    external_fixture_id: string
     match_date: string
     venue: string | null
     status: string
@@ -109,7 +110,7 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
     supabase
       .from('fixtures')
       .select(
-        'id, match_date, venue, status, minute, home_score, away_score, live_data, home_team:home_team_id(name, short_name), away_team:away_team_id(name, short_name)',
+        'id, external_fixture_id, match_date, venue, status, minute, home_score, away_score, live_data, home_team:home_team_id(name, short_name), away_team:away_team_id(name, short_name)',
       )
       .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`)
       .order('match_date', { ascending: false })
@@ -131,11 +132,13 @@ export async function getTeamBySlug(slug: string): Promise<TeamDetail | null> {
     ...(team as TeamListItem),
     fixtures: fixturesResult.error
       ? []
-      : (fixturesResult.data as unknown as FixtureRow[]).map((fixture) => ({
-          ...fixture,
-          home_team: firstRelation(fixture.home_team),
-          away_team: firstRelation(fixture.away_team),
-        })),
+      : (fixturesResult.data as unknown as FixtureRow[])
+          .filter((fixture) => !fixture.external_fixture_id.startsWith('demo-'))
+          .map((fixture) => ({
+            ...fixture,
+            home_team: firstRelation(fixture.home_team),
+            away_team: firstRelation(fixture.away_team),
+          })),
     content: contentResult.error
       ? []
       : (contentResult.data as TeamDetail['content']).map((post) =>
